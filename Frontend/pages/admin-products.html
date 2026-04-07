@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products — Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="layout-admin">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="brand-icon">🛒</div>
+            <div class="sidebar-logo-text">
+                <h3>Smart Supermarket</h3>
+                <span>Admin Panel</span>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Main</div>
+            <a href="./admin-dashboard.html" class="sidebar-link">
+                <span class="s-icon">📊</span> Dashboard
+            </a>
+            <a href="./admin-products.html" class="sidebar-link active">
+                <span class="s-icon">📦</span> Products
+            </a>
+            <a href="./admin-orders.html" class="sidebar-link">
+                <span class="s-icon">🧾</span> Orders
+            </a>
+            <a href="./admin-releve.html" class="sidebar-link">
+                <span class="s-icon">📄</span> Statement
+            </a>
+            <a href="./admin-chatbot.html" class="sidebar-link">
+                <span class="s-icon">🤖</span> AI Assistant
+            </a>
+            <div class="nav-section-label">Store</div>
+            <a href="./products.html" class="sidebar-link">
+                <span class="s-icon">🛍️</span> Storefront
+            </a>
+            <a href="../index.html" class="sidebar-link">
+                <span class="s-icon">🏠</span> Home
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="admin-avatar">A</div>
+                <div class="user-info">
+                    <strong id="admin-name">Admin</strong>
+                    <small>Administrator</small>
+                </div>
+                <button class="btn-logout" onclick="doLogout()" title="Logout">↩</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="admin-main">
+        <div class="flex-between mb-24">
+            <div class="page-header" style="margin-bottom:0">
+                <h1>Products</h1>
+                <p>Manage your product catalog</p>
+            </div>
+            <button class="btn btn-primary" onclick="openModal()">+ Add Product</button>
+        </div>
+
+        <!-- Filters -->
+        <div class="card mb-24" style="padding:14px 18px">
+            <div class="flex gap-12" style="flex-wrap:wrap;align-items:center">
+                <input type="text" id="search" class="form-control" placeholder="🔍 Search..." style="max-width:240px" oninput="renderTable()">
+                <select id="cat-filter" class="form-control" style="max-width:180px" onchange="renderTable()">
+                    <option value="">All categories</option>
+                </select>
+                <select id="stock-filter" class="form-control" style="max-width:160px" onchange="renderTable()">
+                    <option value="">All stock levels</option>
+                    <option value="out">Out of stock</option>
+                    <option value="low">Low stock (≤5)</option>
+                    <option value="ok">In stock</option>
+                </select>
+                <span id="count" class="text-muted" style="margin-left:auto"></span>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="card" style="padding:0">
+            <div class="table-wrap">
+                <table id="products-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">
+                            <span class="spinner"></span>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title" id="modal-title">Add Product</span>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div id="modal-error"></div>
+        <div class="form-group">
+            <label class="form-label">Name *</label>
+            <input type="text" id="f-name" class="form-control" placeholder="Product name">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="form-group">
+                <label class="form-label">Category *</label>
+                <input type="text" id="f-category" class="form-control" placeholder="e.g. Dairy">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Price (MAD) *</label>
+                <input type="number" id="f-price" class="form-control" placeholder="0.00" min="0" step="0.01">
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="form-group">
+                <label class="form-label">Stock *</label>
+                <input type="number" id="f-stock" class="form-control" placeholder="0" min="0">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Image URL</label>
+                <input type="text" id="f-image" class="form-control" placeholder="https://...">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea id="f-description" class="form-control" rows="2" placeholder="Short description..."></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="modal-save-btn" onclick="saveProduct()">Save Product</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script type="module">
+    import { getProducts, addProduct, updateProduct, deleteProduct, getCategories, requireAdmin } from '../js/api.js';
+    import { toast, formatPrice, stockBadge, categoryEmoji } from '../js/app.js';
+
+    const user = requireAdmin();
+    if (!user) throw new Error("Not admin");
+
+    document.getElementById("admin-name").textContent   = user.username;
+    document.getElementById("admin-avatar").textContent = user.username[0].toUpperCase();
+
+    window.doLogout = function() {
+        localStorage.removeItem("user");
+        window.location.href = "./login.html";
+    };
+
+    let allProducts = [];
+    let editingId   = null;
+
+    // ── Load ─────────────────────────────────────────────────────
+    async function load() {
+        allProducts = await getProducts();
+        const cats  = [...new Set(allProducts.map(p => p.category))].sort();
+
+        const catFilter = document.getElementById("cat-filter");
+        cats.forEach(c => {
+            const o = document.createElement("option");
+            o.value = c; o.textContent = c;
+            catFilter.appendChild(o);
+        });
+
+        renderTable();
+    }
+
+    window.renderTable = function() {
+        const search      = document.getElementById("search").value.toLowerCase();
+        const catFilter   = document.getElementById("cat-filter").value;
+        const stockFilter = document.getElementById("stock-filter").value;
+
+        let rows = allProducts;
+
+        if (search)     rows = rows.filter(p => p.name.toLowerCase().includes(search) || p.category.toLowerCase().includes(search));
+        if (catFilter)  rows = rows.filter(p => p.category === catFilter);
+        if (stockFilter === "out") rows = rows.filter(p => p.stock === 0);
+        else if (stockFilter === "low") rows = rows.filter(p => p.stock > 0 && p.stock <= 5);
+        else if (stockFilter === "ok")  rows = rows.filter(p => p.stock > 5);
+
+        document.getElementById("count").textContent = `${rows.length} product${rows.length !== 1 ? "s" : ""}`;
+
+        const tbody = document.getElementById("table-body");
+
+        if (!rows.length) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">No products found</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = rows.map(p => `
+            <tr>
+                <td style="color:var(--muted);font-family:var(--font-mono);font-size:13px">#${p.id}</td>
+                <td>
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <span style="font-size:22px">${categoryEmoji(p.category)}</span>
+                        <div>
+                            <div style="font-weight:600">${p.name}</div>
+                            ${p.description ? `<div style="font-size:12px;color:var(--muted)">${p.description.slice(0,40)}${p.description.length > 40 ? '…' : ''}</div>` : ''}
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge badge-blue">${p.category}</span></td>
+                <td style="font-weight:700;color:var(--primary)">${formatPrice(p.price)}</td>
+                <td>${stockBadge(p.stock)}</td>
+                <td>
+                    <div class="flex gap-8">
+                        <button class="btn btn-outline btn-sm" onclick="openEdit(${p.id})">✏️ Edit</button>
+                        <button class="btn btn-sm" style="background:var(--red-bg);color:var(--red)" onclick="handleDelete(${p.id}, '${p.name.replace(/'/g,"\\'")}')">🗑</button>
+                    </div>
+                </td>
+            </tr>
+        `).join("");
+    };
+
+    // ── Modal ─────────────────────────────────────────────────────
+    window.openModal = function() {
+        editingId = null;
+        document.getElementById("modal-title").textContent = "Add Product";
+        document.getElementById("modal-save-btn").textContent = "Save Product";
+        ["f-name","f-category","f-price","f-stock","f-image","f-description"].forEach(id => {
+            document.getElementById(id).value = "";
+        });
+        document.getElementById("modal-error").innerHTML = "";
+        document.getElementById("modal").classList.add("open");
+        document.getElementById("f-name").focus();
+    };
+
+    window.openEdit = function(id) {
+        const p = allProducts.find(x => x.id === id);
+        if (!p) return;
+        editingId = id;
+        document.getElementById("modal-title").textContent = "Edit Product";
+        document.getElementById("modal-save-btn").textContent = "Update Product";
+        document.getElementById("f-name").value        = p.name;
+        document.getElementById("f-category").value    = p.category;
+        document.getElementById("f-price").value       = p.price;
+        document.getElementById("f-stock").value       = p.stock;
+        document.getElementById("f-image").value       = p.image_url || "";
+        document.getElementById("f-description").value = p.description || "";
+        document.getElementById("modal-error").innerHTML = "";
+        document.getElementById("modal").classList.add("open");
+    };
+
+    window.closeModal = function() {
+        document.getElementById("modal").classList.remove("open");
+    };
+
+    window.saveProduct = async function() {
+        const data = {
+            name:        document.getElementById("f-name").value.trim(),
+            category:    document.getElementById("f-category").value.trim(),
+            price:       parseFloat(document.getElementById("f-price").value),
+            stock:       parseInt(document.getElementById("f-stock").value),
+            image_url:   document.getElementById("f-image").value.trim(),
+            description: document.getElementById("f-description").value.trim()
+        };
+
+        const errBox = document.getElementById("modal-error");
+        errBox.innerHTML = "";
+
+        if (!data.name || !data.category || isNaN(data.price) || isNaN(data.stock)) {
+            errBox.innerHTML = `<div class="alert alert-error">Please fill all required fields.</div>`;
+            return;
+        }
+
+        const btn = document.getElementById("modal-save-btn");
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner"></span> Saving...`;
+
+        const res = editingId
+            ? await updateProduct(editingId, data)
+            : await addProduct(data);
+
+        btn.disabled = false;
+        btn.textContent = editingId ? "Update Product" : "Save Product";
+
+        if (res.error) {
+            errBox.innerHTML = `<div class="alert alert-error">❌ ${res.error}</div>`;
+            return;
+        }
+
+        toast(editingId ? "Product updated ✓" : "Product added ✓", "success");
+        closeModal();
+        allProducts = await getProducts();
+        renderTable();
+    };
+
+    window.handleDelete = async function(id, name) {
+        if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+        const res = await deleteProduct(id);
+        if (res.error) { toast(res.error, "error"); return; }
+        toast(`"${name}" deleted`, "warning");
+        allProducts = await getProducts();
+        renderTable();
+    };
+
+    // Close modal on overlay click
+    document.getElementById("modal").addEventListener("click", e => {
+        if (e.target === document.getElementById("modal")) closeModal();
+    });
+
+    load();
+</script>
+</body>
+</html>

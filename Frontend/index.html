@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Supermarket</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .hero {
+            background: linear-gradient(135deg, #eff4ff 0%, #f5f6fa 60%, #fff7ed 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 80px 24px;
+            text-align: center;
+        }
+
+        .hero-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-10px); }
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            color: var(--text);
+            margin-bottom: 14px;
+        }
+
+        .hero h1 span { color: var(--primary); }
+
+        .hero p {
+            font-size: 17px;
+            color: var(--text-2);
+            max-width: 480px;
+            margin: 0 auto 32px;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .features {
+            max-width: 1100px;
+            margin: 64px auto;
+            padding: 0 24px;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .features > p {
+            text-align: center;
+            color: var(--muted);
+            margin-bottom: 48px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 22px;
+        }
+
+        .feature-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px 24px;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+
+        .feature-icon {
+            font-size: 40px;
+            margin-bottom: 14px;
+        }
+
+        .feature-card h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .feature-card p {
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .categories-section {
+            background: var(--white);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 56px 24px;
+        }
+
+        .categories-inner {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .categories-inner h2 { margin-bottom: 8px; }
+        .categories-inner > p { color: var(--muted); margin-bottom: 36px; }
+
+        .cat-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            justify-content: center;
+        }
+
+        .cat-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 22px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-2);
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+
+        .cat-chip:hover {
+            background: var(--primary-bg);
+            border-color: var(--primary-bd);
+            color: var(--primary);
+        }
+
+        footer {
+            background: var(--text);
+            color: rgba(255,255,255,0.6);
+            text-align: center;
+            padding: 28px 24px;
+            font-size: 13px;
+        }
+
+        footer strong { color: white; }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 28px; }
+            .features-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<nav id="navbar"></nav>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-icon">🛒</div>
+    <h1>Your <span>Smart</span> Supermarket</h1>
+    <p>Fresh groceries, smart shopping, delivered to your door. Shop smarter, live better.</p>
+    <div class="hero-cta">
+        <a href="pages/products.html" class="btn btn-primary btn-lg">🛍️ Shop Now</a>
+        <a href="pages/login.html"    class="btn btn-outline btn-lg">Sign In</a>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="features">
+    <h2>Everything you need</h2>
+    <p>A complete smart shopping experience</p>
+
+    <div class="features-grid">
+        <div class="feature-card fade-up" style="animation-delay:0.05s">
+            <div class="feature-icon">🥛</div>
+            <h3>Fresh Products</h3>
+            <p>Browse hundreds of fresh products across all categories, updated daily.</p>
+        </div>
+        <div class="feature-card fade-up" style="animation-delay:0.10s">
+            <div class="feature-icon">🛒</div>
+            <h3>Easy Cart</h3>
+            <p>Add items, adjust quantities, and checkout in just a few clicks.</p>
+        </div>
+        <div class="feature-card fade-up" style="animation-delay:0.15s">
+            <div class="feature-icon">📦</div>
+            <h3>Order Tracking</h3>
+            <p>Track your orders in real-time from confirmation to delivery.</p>
+        </div>
+        <div class="feature-card fade-up" style="animation-delay:0.20s">
+            <div class="feature-icon">🤖</div>
+            <h3>AI Stock Monitor</h3>
+            <p>Smart alerts detect low stock automatically, keeping shelves always full.</p>
+        </div>
+        <div class="feature-card fade-up" style="animation-delay:0.25s">
+            <div class="feature-icon">📊</div>
+            <h3>Admin Dashboard</h3>
+            <p>Powerful analytics, charts, and management tools for administrators.</p>
+        </div>
+        <div class="feature-card fade-up" style="animation-delay:0.30s">
+            <div class="feature-icon">🔐</div>
+            <h3>Secure & Reliable</h3>
+            <p>Encrypted passwords, role-based access, and secure data storage.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Categories -->
+<section class="categories-section">
+    <div class="categories-inner">
+        <h2>Shop by Category</h2>
+        <p>Find what you need quickly</p>
+        <div class="cat-grid" id="cat-grid">
+            <!-- Filled by JS -->
+        </div>
+    </div>
+</section>
+
+<footer>
+    <strong>Smart Supermarket</strong> — Final Year Project (PFE) &nbsp;|&nbsp;
+    Built with Flask + HTML/CSS/JS &nbsp;|&nbsp; 2025
+</footer>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script type="module">
+    import { getCategories } from './js/api.js';
+    import { buildNavbar, categoryEmoji } from './js/app.js';
+
+    buildNavbar("");
+
+    const cats = await getCategories();
+    const grid = document.getElementById("cat-grid");
+
+    if (cats.length) {
+        grid.innerHTML = cats.map(c => `
+            <a href="pages/products.html?category=${encodeURIComponent(c)}" class="cat-chip">
+                <span>${categoryEmoji(c)}</span> ${c}
+            </a>
+        `).join("");
+    }
+</script>
+</body>
+</html>

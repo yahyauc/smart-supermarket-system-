@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders — Smart Supermarket</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav id="navbar"></nav>
+
+<div style="max-width:860px;margin:0 auto;padding:32px 24px">
+
+    <div class="page-header">
+        <h1>📦 My Orders</h1>
+        <p>Track all your past orders</p>
+    </div>
+
+    <div id="orders-container">
+        <div class="flex-center" style="padding:60px">
+            <span class="spinner"></span>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { getUserOrders, requireAuth } from '../js/api.js';
+    import { buildNavbar, formatPrice, formatDate } from '../js/app.js';
+
+    buildNavbar('orders');
+
+    const user = requireAuth('./login.html');
+    if (!user) throw new Error("Not authenticated");
+
+    const STATUS_STEPS = ["pending", "confirmed", "shipped", "delivered"];
+
+    function stepIndex(status) {
+        const i = STATUS_STEPS.indexOf(status);
+        return i === -1 ? 0 : i;
+    }
+
+    async function load() {
+        const orders    = await getUserOrders(user.id);
+        const container = document.getElementById("orders-container");
+
+        if (!orders.length) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📦</div>
+                    <h3>No orders yet</h3>
+                    <p>Start shopping to see your orders here</p>
+                    <a href="./products.html" class="btn btn-primary mt-16">Shop Now</a>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = orders.map(order => {
+            const isCancelled = order.status === "cancelled";
+            const step = stepIndex(order.status);
+
+            const tracker = isCancelled
+                ? `<div class="alert alert-error" style="margin-top:16px">❌ This order was cancelled.</div>`
+                : `<div style="margin-top:20px">
+                    <div style="display:flex;justify-content:space-between;position:relative;margin-bottom:8px">
+                        <div style="position:absolute;top:14px;left:0;right:0;height:3px;background:var(--border);z-index:0"></div>
+                        <div style="position:absolute;top:14px;left:0;height:3px;background:var(--primary);z-index:1;width:${step === 0 ? 0 : step === 1 ? 33 : step === 2 ? 66 : 100}%;transition:width 0.4s"></div>
+                        ${STATUS_STEPS.map((s, i) => `
+                            <div style="display:flex;flex-direction:column;align-items:center;z-index:2;flex:1">
+                                <div style="width:28px;height:28px;border-radius:50%;background:${i <= step ? 'var(--primary)' : 'var(--border)'};display:flex;align-items:center;justify-content:center;color:white;font-size:13px;font-weight:700;transition:background 0.3s">
+                                    ${i < step ? '✓' : i + 1}
+                                </div>
+                                <span style="font-size:11px;margin-top:6px;color:${i <= step ? 'var(--primary)' : 'var(--muted)'};font-weight:${i === step ? '700' : '500'};text-transform:capitalize">${s}</span>
+                            </div>
+                        `).join("")}
+                    </div>
+                </div>`;
+
+            return `
+                <div class="card fade-up" style="margin-bottom:18px">
+                    <div class="flex-between" style="margin-bottom:14px">
+                        <div class="flex gap-12" style="align-items:center">
+                            <span style="font-weight:800;font-size:16px">Order #${order.id}</span>
+                            <span class="badge status-${order.status}">${order.status}</span>
+                        </div>
+                        <div style="text-align:right">
+                            <div style="font-size:18px;font-weight:800;color:var(--primary)">${formatPrice(order.total)}</div>
+                            <div style="font-size:12px;color:var(--muted)">${order.date}</div>
+                        </div>
+                    </div>
+
+                    ${tracker}
+
+                    <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px">
+                        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.7px;margin-bottom:10px">Items</div>
+                        ${order.items.map(item => `
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+                                <div>
+                                    <span style="font-size:14px;font-weight:500">${item.product_name}</span>
+                                    <span style="color:var(--muted);font-size:13px;margin-left:6px">× ${item.quantity}</span>
+                                </div>
+                                <span style="font-weight:600;font-size:14px">${formatPrice(item.subtotal)}</span>
+                            </div>
+                        `).join("")}
+                        ${order.note ? `<p style="margin-top:10px;font-size:13px;color:var(--muted)">📝 Note: ${order.note}</p>` : ""}
+                    </div>
+                </div>`;
+        }).join("");
+    }
+
+    load();
+</script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products — Smart Supermarket</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<nav id="navbar"></nav>
+
+<div style="max-width:1200px;margin:0 auto;padding:32px 24px">
+
+    <!-- Header -->
+    <div class="flex-between mb-24">
+        <div>
+            <h1>Our Products</h1>
+            <p style="color:var(--muted);margin-top:4px">Fresh groceries delivered to your door</p>
+        </div>
+        <div id="cart-summary" style="display:none" class="card" style="padding:12px 18px">
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-24" style="padding:16px 20px">
+        <div class="flex gap-12" style="flex-wrap:wrap;align-items:center">
+            <input
+                type="text"
+                id="search-input"
+                class="form-control"
+                placeholder="🔍 Search products..."
+                style="max-width:260px"
+                oninput="filterProducts()"
+            >
+            <div id="category-filters" class="flex gap-8" style="flex-wrap:wrap"></div>
+            <button class="btn btn-outline btn-sm" onclick="clearFilters()" style="margin-left:auto">
+                Clear filters
+            </button>
+        </div>
+    </div>
+
+    <!-- Results count -->
+    <p id="results-count" class="text-muted mb-16"></p>
+
+    <!-- Products grid -->
+    <div id="products-grid" class="products-grid">
+        <div class="flex-center" style="grid-column:1/-1;padding:60px">
+            <span class="spinner"></span>
+        </div>
+    </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script type="module">
+    import { getProducts, getCategories } from '../js/api.js';
+    import { addToCart, buildNavbar, toast, categoryEmoji, formatPrice } from '../js/app.js';
+
+    buildNavbar('products');
+
+    let allProducts = [];
+    let activeCategory = "all";
+
+    // ── Load categories ──────────────────────────────────────────
+    async function loadCategories() {
+        const cats = await getCategories();
+        const container = document.getElementById("category-filters");
+
+        const all = document.createElement("button");
+        all.className = "btn btn-primary btn-sm";
+        all.id = "cat-all";
+        all.textContent = "All";
+        all.onclick = () => setCategory("all");
+        container.appendChild(all);
+
+        cats.forEach(cat => {
+            const btn = document.createElement("button");
+            btn.className = "btn btn-outline btn-sm";
+            btn.id = `cat-${cat}`;
+            btn.textContent = `${categoryEmoji(cat)} ${cat}`;
+            btn.onclick = () => setCategory(cat);
+            container.appendChild(btn);
+        });
+    }
+
+    function setCategory(cat) {
+        activeCategory = cat;
+
+        document.querySelectorAll("[id^='cat-']").forEach(btn => {
+            btn.className = "btn btn-outline btn-sm";
+        });
+
+        const active = document.getElementById(`cat-${cat}`);
+        if (active) active.className = "btn btn-primary btn-sm";
+
+        renderProducts();
+    }
+
+    // ── Load products ────────────────────────────────────────────
+    async function loadProducts() {
+        allProducts = await getProducts();
+        renderProducts();
+    }
+
+    function filterProducts() {
+        renderProducts();
+    }
+
+    function clearFilters() {
+        document.getElementById("search-input").value = "";
+        setCategory("all");
+    }
+
+    function renderProducts() {
+        const search = document.getElementById("search-input").value.toLowerCase().trim();
+        const grid   = document.getElementById("products-grid");
+
+        let filtered = allProducts;
+
+        if (activeCategory !== "all") {
+            filtered = filtered.filter(p => p.category === activeCategory);
+        }
+
+        if (search) {
+            filtered = filtered.filter(p =>
+                p.name.toLowerCase().includes(search) ||
+                p.category.toLowerCase().includes(search) ||
+                (p.description || "").toLowerCase().includes(search)
+            );
+        }
+
+        document.getElementById("results-count").textContent =
+            `Showing ${filtered.length} product${filtered.length !== 1 ? "s" : ""}`;
+
+        if (!filtered.length) {
+            grid.innerHTML = `
+                <div class="empty-state" style="grid-column:1/-1">
+                    <div class="empty-icon">🔍</div>
+                    <h3>No products found</h3>
+                    <p>Try a different search or category</p>
+                </div>`;
+            return;
+        }
+
+        grid.innerHTML = filtered.map(p => `
+            <div class="product-card fade-up">
+                <div class="product-img">${categoryEmoji(p.category)}</div>
+                <div class="product-body">
+                    <div class="product-name">${p.name}</div>
+                    <div class="product-cat">${p.category}</div>
+                    ${p.description ? `<p style="font-size:12px;color:var(--muted);margin-bottom:4px">${p.description}</p>` : ""}
+                    <div class="product-footer">
+                        <div class="product-price">${formatPrice(p.price)}</div>
+                        <button
+                            class="btn-add-cart"
+                            onclick="handleAddToCart(${JSON.stringify(p).replace(/"/g, '&quot;')})"
+                            ${p.stock === 0 ? "disabled" : ""}
+                        >
+                            ${p.stock === 0 ? "Out of stock" : "+ Add"}
+                        </button>
+                    </div>
+                    <div style="margin-top:8px">
+                        ${p.stock === 0
+                            ? `<span class="badge badge-red">Out of stock</span>`
+                            : p.stock <= 5
+                                ? `<span class="badge badge-orange">Only ${p.stock} left</span>`
+                                : `<span class="badge badge-green">In stock</span>`
+                        }
+                    </div>
+                </div>
+            </div>
+        `).join("");
+    }
+
+    window.handleAddToCart = function(product) {
+        if (product.stock === 0) return;
+        addToCart(product);
+        toast(`${product.name} added to cart`, "success");
+    };
+
+    await loadCategories();
+    await loadProducts();
+</script>
+</body>
+</html>

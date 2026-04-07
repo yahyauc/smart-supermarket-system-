@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Statement — Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        .filter-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 22px 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-sm);
+        }
+        .filter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr auto;
+            gap: 14px;
+            align-items: flex-end;
+        }
+        .preview-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        .preview-header {
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg);
+        }
+        .preview-title { font-size: 15px; font-weight: 700; color: var(--text); }
+        .summary-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            border-bottom: 1px solid var(--border);
+        }
+        .summary-item {
+            padding: 16px 20px;
+            border-right: 1px solid var(--border);
+            text-align: center;
+        }
+        .summary-item:last-child { border-right: none; }
+        .summary-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text);
+            line-height: 1;
+        }
+        .summary-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-top: 5px;
+        }
+        .order-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .order-table thead th {
+            background: var(--bg);
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            padding: 11px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        .order-table tbody td {
+            padding: 13px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            vertical-align: middle;
+        }
+        .order-table tbody tr:last-child td { border-bottom: none; }
+        .order-table tbody tr:hover { background: var(--bg); }
+        .download-bar {
+            padding: 18px 22px;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .download-info { font-size: 13px; color: var(--muted); }
+        .download-info strong { color: var(--text); }
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 11px 24px;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+        }
+        .btn-download:hover   { background: var(--primary-h); }
+        .btn-download:active  { transform: scale(0.97); }
+        .btn-download:disabled{ background: var(--muted); cursor: not-allowed; }
+        .empty-state { text-align: center; padding: 60px 24px; color: var(--muted); }
+        .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+        .empty-state h3 { font-size: 15px; color: var(--text-2); margin-bottom: 6px; }
+        .pdf-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(15,20,40,0.5); z-index: 999;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(3px);
+        }
+        .pdf-overlay.show { display: flex; }
+        .pdf-box {
+            background: white; border-radius: var(--radius-lg);
+            padding: 32px 40px; text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .pdf-box .spinner { width: 36px; height: 36px; border-width: 3px; margin: 0 auto 16px; }
+        .pdf-box strong { font-size: 16px; color: var(--text); }
+        .pdf-box p { font-size: 13px; color: var(--muted); margin-top: 8px; }
+    </style>
+</head>
+<body>
+<div class="layout-admin">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="brand-icon">🛒</div>
+            <div class="sidebar-logo-text">
+                <h3>Smart Supermarket</h3>
+                <span>Admin Panel</span>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Main</div>
+            <a href="./admin-dashboard.html" class="sidebar-link">
+                <span class="s-icon">📊</span> Dashboard
+            </a>
+            <a href="./admin-products.html" class="sidebar-link">
+                <span class="s-icon">📦</span> Products
+            </a>
+            <a href="./admin-orders.html" class="sidebar-link">
+                <span class="s-icon">🧾</span> Orders
+            </a>
+            <a href="./admin-releve.html"    class="sidebar-link active">
+                <span class="s-icon">📄</span> Statement
+            </a>
+            <a href="./admin-chatbot.html" class="sidebar-link">
+                <span class="s-icon">🤖</span> AI Assistant
+            </a>
+            <div class="nav-section-label">Store</div>
+            <a href="./products.html" class="sidebar-link">
+                <span class="s-icon">🛍️</span> Storefront
+            </a>
+            <a href="../index.html" class="sidebar-link">
+                <span class="s-icon">🏠</span> Home
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="admin-avatar">A</div>
+                <div class="user-info">
+                    <strong id="admin-name">Admin</strong>
+                    <small>Administrator</small>
+                </div>
+                <button class="btn-logout" onclick="doLogout()" title="Logout">↩</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="admin-main">
+
+        <div class="page-header">
+            <h1>📄 Order Statement</h1>
+            <p>Filter and download a PDF statement of your orders</p>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-card">
+            <h3 style="margin-bottom:16px;font-size:14px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.7px">
+                Filters
+            </h3>
+            <div class="filter-grid">
+                <div class="form-group" style="margin:0">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" id="f-start" class="form-control" onchange="applyFilters()">
+                </div>
+                <div class="form-group" style="margin:0">
+                    <label class="form-label">End Date</label>
+                    <input type="date" id="f-end" class="form-control" onchange="applyFilters()">
+                </div>
+                <div class="form-group" style="margin:0">
+                    <label class="form-label">Status</label>
+                    <select id="f-status" class="form-control" onchange="applyFilters()">
+                        <option value="">All statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="shipped">Shipped</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin:0">
+                    <label class="form-label">Customer ID</label>
+                    <input type="number" id="f-user" class="form-control" placeholder="e.g. 2" oninput="applyFilters()">
+                </div>
+                <button class="btn btn-outline" onclick="resetFilters()" style="height:42px;white-space:nowrap">
+                    ↺ Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="preview-card">
+            <div class="preview-header">
+                <span class="preview-title">Statement Preview</span>
+                <span class="badge badge-blue" id="orders-count">0 order(s)</span>
+            </div>
+
+            <!-- Summary bar -->
+            <div class="summary-bar">
+                <div class="summary-item">
+                    <div class="summary-value" id="sum-total-orders">0</div>
+                    <div class="summary-label">Total Orders</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="sum-revenue" style="color:var(--green)">0</div>
+                    <div class="summary-label">Total Revenue (MAD)</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="sum-avg" style="color:var(--primary)">0</div>
+                    <div class="summary-label">Avg. Order (MAD)</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="sum-items" style="color:var(--orange)">0</div>
+                    <div class="summary-label">Items Sold</div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div style="overflow-x:auto">
+                <table class="order-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Items</th>
+                            <th>Status</th>
+                            <th style="text-align:right">Total (MAD)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <tr>
+                            <td colspan="6" style="text-align:center;padding:40px">
+                                <span class="spinner"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Download bar -->
+            <div class="download-bar">
+                <div class="download-info">
+                    Statement ready &nbsp;·&nbsp;
+                    <strong id="dl-count">0</strong> order(s) &nbsp;·&nbsp;
+                    Total: <strong id="dl-total">0 MAD</strong>
+                </div>
+                <button class="btn-download" id="dl-btn" onclick="downloadPDF()">
+                    Download PDF Statement
+                </button>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- PDF Overlay -->
+<div class="pdf-overlay" id="pdf-overlay">
+    <div class="pdf-box">
+        <div class="spinner"></div>
+        <strong>Generating PDF...</strong>
+        <p>Please wait a moment</p>
+    </div>
+</div>
+
+<script type="module">
+    import { getAllOrders, requireAdmin } from '../js/api.js';
+
+    const { jsPDF } = window.jspdf;
+
+    const user = requireAdmin();
+    if (!user) throw new Error("Not admin");
+
+    document.getElementById("admin-name").textContent   = user.username;
+    document.getElementById("admin-avatar").textContent = user.username[0].toUpperCase();
+
+    window.doLogout = function () {
+        localStorage.removeItem("user");
+        window.location.href = "./login.html";
+    };
+
+    let allOrders      = [];
+    let filteredOrders = [];
+
+    // ── Load ─────────────────────────────────────────────────────
+    async function load() {
+        allOrders = await getAllOrders();
+
+        // Default: current month
+        const now   = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        const end   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        document.getElementById("f-start").value = start.toISOString().split("T")[0];
+        document.getElementById("f-end").value   = end.toISOString().split("T")[0];
+
+        applyFilters();
+    }
+
+    // ── Filters ──────────────────────────────────────────────────
+    window.applyFilters = function () {
+        const start  = document.getElementById("f-start").value;
+        const end    = document.getElementById("f-end").value;
+        const status = document.getElementById("f-status").value;
+        const userId = document.getElementById("f-user").value;
+
+        filteredOrders = allOrders.filter(o => {
+            const date = o.date || o.created_at;
+            if (start  && date < start)               return false;
+            if (end    && date.slice(0,10) > end)     return false;
+            if (status && o.status !== status)        return false;
+            if (userId && o.user_id !== parseInt(userId)) return false;
+            return true;
+        });
+
+        renderTable();
+        renderSummary();
+    };
+
+    window.resetFilters = function () {
+        document.getElementById("f-start").value  = "";
+        document.getElementById("f-end").value    = "";
+        document.getElementById("f-status").value = "";
+        document.getElementById("f-user").value   = "";
+        filteredOrders = [...allOrders];
+        renderTable();
+        renderSummary();
+    };
+
+    // ── Render table ─────────────────────────────────────────────
+    function renderTable() {
+        const tbody = document.getElementById("table-body");
+        document.getElementById("orders-count").textContent =
+            `${filteredOrders.length} order${filteredOrders.length !== 1 ? "s" : ""}`;
+
+        if (!filteredOrders.length) {
+            tbody.innerHTML = `
+                <tr><td colspan="6">
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <h3>No orders found</h3>
+                        <p>Adjust the filters to broaden your search</p>
+                    </div>
+                </td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = filteredOrders.map(o => `
+            <tr>
+                <td style="font-weight:700;color:var(--primary);font-family:var(--font-mono)">#${o.id}</td>
+                <td style="color:var(--text-2)">${o.date || o.created_at}</td>
+                <td style="color:var(--muted)">${o.user_id ? "Customer #" + o.user_id : "Guest"}</td>
+                <td>${o.items?.length || 0} item(s)</td>
+                <td><span class="badge status-${o.status}">${o.status}</span></td>
+                <td style="text-align:right;font-weight:700;color:var(--green)">
+                    ${Number(o.total || 0).toFixed(2)} MAD
+                </td>
+            </tr>
+        `).join("");
+    }
+
+    // ── Summary bar ──────────────────────────────────────────────
+    function renderSummary() {
+        const total    = filteredOrders.reduce((s, o) => s + Number(o.total || 0), 0);
+        const avgOrder = filteredOrders.length ? total / filteredOrders.length : 0;
+        const items    = filteredOrders.reduce((s, o) =>
+            s + (o.items?.reduce((a, i) => a + i.quantity, 0) || 0), 0);
+
+        document.getElementById("sum-total-orders").textContent = filteredOrders.length;
+        document.getElementById("sum-revenue").textContent      = total.toFixed(2);
+        document.getElementById("sum-avg").textContent          = avgOrder.toFixed(2);
+        document.getElementById("sum-items").textContent        = items;
+        document.getElementById("dl-count").textContent         = filteredOrders.length;
+        document.getElementById("dl-total").textContent         = total.toFixed(2) + " MAD";
+        document.getElementById("dl-btn").disabled              = filteredOrders.length === 0;
+    }
+
+    // ── Generate & Download PDF ───────────────────────────────────
+    window.downloadPDF = function () {
+        if (!filteredOrders.length) return;
+
+        const overlay = document.getElementById("pdf-overlay");
+        overlay.classList.add("show");
+
+        setTimeout(() => {
+            try {
+                const doc    = new jsPDF({ unit: "mm", format: "a4" });
+                const pageW  = doc.internal.pageSize.getWidth();
+                const pageH  = doc.internal.pageSize.getHeight();
+                const margin = 14;
+                let y        = 0;
+
+                // ── Page header ──────────────────────────────────
+                function addPageHeader(isFirst) {
+                    doc.setFillColor(37, 99, 235);
+                    doc.rect(0, 0, pageW, isFirst ? 38 : 18, "F");
+                    doc.setTextColor(255, 255, 255);
+
+                    if (isFirst) {
+                        doc.setFontSize(18);
+                        doc.setFont("helvetica", "bold");
+                        doc.text("Smart Supermarket", margin, 13);
+
+                        doc.setFontSize(11);
+                        doc.setFont("helvetica", "normal");
+                        doc.text("Order Statement", margin, 21);
+
+                        const startVal  = document.getElementById("f-start").value  || "All dates";
+                        const endVal    = document.getElementById("f-end").value    || "All dates";
+                        const statusVal = document.getElementById("f-status").value || "All statuses";
+
+                        doc.setFontSize(9);
+                        doc.text(`Period: ${startVal} to ${endVal}   |   Status: ${statusVal}`, margin, 29);
+
+                        const generated = new Date().toLocaleDateString("en-GB", {
+                            day: "2-digit", month: "long", year: "numeric",
+                            hour: "2-digit", minute: "2-digit"
+                        });
+                        doc.text(`Generated: ${generated}`, pageW - margin, 29, { align: "right" });
+                        y = 46;
+                    } else {
+                        doc.setFontSize(10);
+                        doc.setFont("helvetica", "bold");
+                        doc.text("Smart Supermarket - Order Statement (continued)", margin, 12);
+                        y = 24;
+                    }
+
+                    doc.setTextColor(26, 31, 54);
+                }
+
+                // ── Summary box ──────────────────────────────────
+                function addSummaryBox() {
+                    const total = filteredOrders.reduce((s, o) => s + Number(o.total || 0), 0);
+                    const avg   = filteredOrders.length ? total / filteredOrders.length : 0;
+                    const items = filteredOrders.reduce((s, o) =>
+                        s + (o.items?.reduce((a, i) => a + i.quantity, 0) || 0), 0);
+
+                    doc.setFillColor(239, 244, 255);
+                    doc.setDrawColor(191, 207, 254);
+                    doc.setLineWidth(0.3);
+                    doc.roundedRect(margin, y, pageW - margin * 2, 26, 3, 3, "FD");
+
+                    const colW      = (pageW - margin * 2) / 4;
+                    const summaries = [
+                        { label: "Total Orders",    value: String(filteredOrders.length) },
+                        { label: "Total Revenue",   value: total.toFixed(2) + " MAD" },
+                        { label: "Avg. Order",      value: avg.toFixed(2) + " MAD" },
+                        { label: "Items Sold",      value: String(items) },
+                    ];
+
+                    summaries.forEach((s, i) => {
+                        const x = margin + colW * i + colW / 2;
+                        doc.setFontSize(13);
+                        doc.setFont("helvetica", "bold");
+                        doc.setTextColor(37, 99, 235);
+                        doc.text(s.value, x, y + 11, { align: "center" });
+
+                        doc.setFontSize(8);
+                        doc.setFont("helvetica", "normal");
+                        doc.setTextColor(140, 145, 184);
+                        doc.text(s.label.toUpperCase(), x, y + 19, { align: "center" });
+                    });
+
+                    y += 32;
+                }
+
+                // ── Table header ─────────────────────────────────
+                function addTableHeader() {
+                    const cols = [
+                        { label: "Order #",     w: 24, align: "left"   },
+                        { label: "Date",        w: 40, align: "left"   },
+                        { label: "Customer",    w: 26, align: "left"   },
+                        { label: "Items",       w: 18, align: "center" },
+                        { label: "Status",      w: 28, align: "center" },
+                        { label: "Total (MAD)", w: 37, align: "right"  },
+                    ];
+
+                    doc.setFillColor(245, 246, 250);
+                    doc.setDrawColor(228, 231, 240);
+                    doc.setLineWidth(0.2);
+                    doc.rect(margin, y, pageW - margin * 2, 9, "FD");
+
+                    doc.setFontSize(8);
+                    doc.setFont("helvetica", "bold");
+                    doc.setTextColor(140, 145, 184);
+
+                    let x = margin + 3;
+                    cols.forEach(col => {
+                        if      (col.align === "right")  doc.text(col.label, x + col.w - 3, y + 6, { align: "right" });
+                        else if (col.align === "center") doc.text(col.label, x + col.w / 2, y + 6, { align: "center" });
+                        else                             doc.text(col.label, x, y + 6);
+                        x += col.w;
+                    });
+
+                    y += 9;
+                    return cols;
+                }
+
+                // ── Build ────────────────────────────────────────
+                addPageHeader(true);
+                addSummaryBox();
+                const cols = addTableHeader();
+
+                const statusColors = {
+                    pending:   [202, 138,   4],
+                    confirmed: [ 37,  99, 235],
+                    shipped:   [234,  88,  12],
+                    delivered: [ 22, 163,  74],
+                    cancelled: [220,  38,  38],
+                };
+
+                let rowEven = false;
+
+                filteredOrders.forEach(order => {
+                    if (y > pageH - 22) {
+                        addFooter(doc.internal.getCurrentPageInfo().pageNumber);
+                        doc.addPage();
+                        addPageHeader(false);
+                        addTableHeader();
+                    }
+
+                    if (rowEven) {
+                        doc.setFillColor(250, 251, 255);
+                        doc.rect(margin, y, pageW - margin * 2, 8, "F");
+                    }
+                    rowEven = !rowEven;
+
+                    const rowData = [
+                        "#" + order.id,
+                        (order.date || order.created_at || "").slice(0, 16),
+                        order.user_id ? "Customer #" + order.user_id : "Guest",
+                        (order.items?.length || 0) + " item(s)",
+                        order.status,
+                        Number(order.total || 0).toFixed(2),
+                    ];
+
+                    doc.setFontSize(9);
+                    doc.setFont("helvetica", "normal");
+                    doc.setTextColor(26, 31, 54);
+
+                    let x = margin + 3;
+                    cols.forEach((col, ci) => {
+                        const val = rowData[ci];
+
+                        if (ci === 0) {
+                            doc.setTextColor(37, 99, 235);
+                            doc.setFont("helvetica", "bold");
+                            doc.text(val, x, y + 5.5);
+                            doc.setFont("helvetica", "normal");
+                            doc.setTextColor(26, 31, 54);
+                        } else if (ci === 4) {
+                            const c = statusColors[val] || [100, 100, 120];
+                            doc.setTextColor(...c);
+                            doc.setFont("helvetica", "bold");
+                            doc.text(val, x + col.w / 2, y + 5.5, { align: "center" });
+                            doc.setFont("helvetica", "normal");
+                            doc.setTextColor(26, 31, 54);
+                        } else if (ci === 5) {
+                            doc.setFont("helvetica", "bold");
+                            doc.setTextColor(22, 163, 74);
+                            doc.text(val + " MAD", x + col.w - 3, y + 5.5, { align: "right" });
+                            doc.setFont("helvetica", "normal");
+                            doc.setTextColor(26, 31, 54);
+                        } else {
+                            doc.text(val, x, y + 5.5);
+                        }
+
+                        x += col.w;
+                    });
+
+                    doc.setDrawColor(228, 231, 240);
+                    doc.setLineWidth(0.1);
+                    doc.line(margin, y + 8, pageW - margin, y + 8);
+                    y += 8;
+                });
+
+                // ── Grand total row ──────────────────────────────
+                const grandTotal = filteredOrders.reduce((s, o) => s + Number(o.total || 0), 0);
+
+                if (y > pageH - 20) {
+                    addFooter(doc.internal.getCurrentPageInfo().pageNumber);
+                    doc.addPage();
+                    y = 20;
+                }
+
+                y += 3;
+                doc.setFillColor(37, 99, 235);
+                doc.rect(margin, y, pageW - margin * 2, 10, "F");
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(10);
+                doc.setTextColor(255, 255, 255);
+                doc.text("GRAND TOTAL", margin + 3, y + 7);
+                doc.text(grandTotal.toFixed(2) + " MAD", pageW - margin - 3, y + 7, { align: "right" });
+
+                // ── Footer ───────────────────────────────────────
+                function addFooter(pageNum) {
+                    const total = doc.internal.getNumberOfPages();
+                    doc.setPage(pageNum);
+                    doc.setFontSize(8);
+                    doc.setTextColor(140, 145, 184);
+                    doc.text(
+                        `Smart Supermarket  |  Order Statement  |  Page ${pageNum} of ${total}`,
+                        pageW / 2, pageH - 6, { align: "center" }
+                    );
+                }
+
+                const totalPages = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) addFooter(i);
+
+                // ── Save ─────────────────────────────────────────
+                const start = document.getElementById("f-start").value || "all";
+                const end   = document.getElementById("f-end").value   || "all";
+                doc.save(`order_statement_${start}_${end}.pdf`);
+
+            } catch (err) {
+                console.error(err);
+                alert("PDF error: " + err.message);
+            } finally {
+                document.getElementById("pdf-overlay").classList.remove("show");
+            }
+        }, 150);
+    };
+
+    // ── Init ─────────────────────────────────────────────────────
+    load();
+</script>
+</body>
+</html>

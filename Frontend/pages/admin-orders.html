@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders — Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<div class="layout-admin">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="brand-icon">🛒</div>
+            <div class="sidebar-logo-text">
+                <h3>Smart Supermarket</h3>
+                <span>Admin Panel</span>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Main</div>
+            <a href="./admin-dashboard.html" class="sidebar-link">
+                <span class="s-icon">📊</span> Dashboard
+            </a>
+            <a href="./admin-products.html" class="sidebar-link">
+                <span class="s-icon">📦</span> Products
+            </a>
+            <a href="./admin-orders.html" class="sidebar-link active">
+                <span class="s-icon">🧾</span> Orders
+            </a>
+            <a href="./admin-releve.html" class="sidebar-link">
+                <span class="s-icon">📄</span> Statement
+            </a>
+            <a href="./admin-chatbot.html" class="sidebar-link">
+                <span class="s-icon">🤖</span> AI Assistant
+            </a>
+            <div class="nav-section-label">Store</div>
+            <a href="./products.html" class="sidebar-link">
+                <span class="s-icon">🛍️</span> Storefront
+            </a>
+            <a href="../index.html" class="sidebar-link">
+                <span class="s-icon">🏠</span> Home
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="admin-avatar">A</div>
+                <div class="user-info">
+                    <strong id="admin-name">Admin</strong>
+                    <small>Administrator</small>
+                </div>
+                <button class="btn-logout" onclick="doLogout()" title="Logout">↩</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="admin-main">
+        <div class="flex-between mb-24">
+            <div class="page-header" style="margin-bottom:0">
+                <h1>Orders</h1>
+                <p>Manage and track all customer orders</p>
+            </div>
+            <div class="flex gap-8">
+                <span class="badge badge-gray" id="order-count">0 orders</span>
+            </div>
+        </div>
+
+        <!-- Status tabs -->
+        <div class="flex gap-8 mb-24" style="flex-wrap:wrap" id="status-tabs">
+            <button class="btn btn-primary btn-sm" data-status="all" onclick="setStatusFilter('all')">All</button>
+            <button class="btn btn-outline btn-sm" data-status="pending"   onclick="setStatusFilter('pending')">⏳ Pending</button>
+            <button class="btn btn-outline btn-sm" data-status="confirmed" onclick="setStatusFilter('confirmed')">✅ Confirmed</button>
+            <button class="btn btn-outline btn-sm" data-status="shipped"   onclick="setStatusFilter('shipped')">🚚 Shipped</button>
+            <button class="btn btn-outline btn-sm" data-status="delivered" onclick="setStatusFilter('delivered')">📬 Delivered</button>
+            <button class="btn btn-outline btn-sm" data-status="cancelled" onclick="setStatusFilter('cancelled')">❌ Cancelled</button>
+        </div>
+
+        <!-- Table -->
+        <div class="card" style="padding:0">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Customer ID</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Update Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <tr><td colspan="7" style="text-align:center;padding:40px">
+                            <span class="spinner"></span>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- Order detail modal -->
+<div class="modal-overlay" id="detail-modal">
+    <div class="modal" style="max-width:540px">
+        <div class="modal-header">
+            <span class="modal-title" id="detail-title">Order Details</span>
+            <button class="modal-close" onclick="closeDetail()">✕</button>
+        </div>
+        <div id="detail-body"></div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeDetail()">Close</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script type="module">
+    import { getAllOrders, updateOrderStatus, requireAdmin } from '../js/api.js';
+    import { toast, formatPrice } from '../js/app.js';
+
+    const user = requireAdmin();
+    if (!user) throw new Error("Not admin");
+
+    document.getElementById("admin-name").textContent   = user.username;
+    document.getElementById("admin-avatar").textContent = user.username[0].toUpperCase();
+
+    window.doLogout = function() {
+        localStorage.removeItem("user");
+        window.location.href = "./login.html";
+    };
+
+    let allOrders       = [];
+    let activeFilter    = "all";
+    const STATUSES      = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
+
+    async function load() {
+        allOrders = await getAllOrders();
+        render();
+    }
+
+    window.setStatusFilter = function(status) {
+        activeFilter = status;
+        document.querySelectorAll("[data-status]").forEach(btn => {
+            btn.className = btn.dataset.status === status
+                ? "btn btn-primary btn-sm"
+                : "btn btn-outline btn-sm";
+        });
+        render();
+    };
+
+    function render() {
+        const rows = activeFilter === "all"
+            ? allOrders
+            : allOrders.filter(o => o.status === activeFilter);
+
+        document.getElementById("order-count").textContent = `${rows.length} order${rows.length !== 1 ? "s" : ""}`;
+
+        const tbody = document.getElementById("table-body");
+
+        if (!rows.length) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">No orders found</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = rows.map(o => `
+            <tr>
+                <td>
+                    <span style="font-weight:700;color:var(--primary);font-family:var(--font-mono);cursor:pointer"
+                        onclick="showDetail(${o.id})">#${o.id}</span>
+                </td>
+                <td style="font-size:13px;color:var(--text-2)">${o.date}</td>
+                <td style="font-size:13px;color:var(--muted)">
+                    ${o.user_id ? `User #${o.user_id}` : "Guest"}
+                </td>
+                <td style="font-size:13px">${o.items?.length || 0} item(s)</td>
+                <td style="font-weight:700;color:var(--green)">${formatPrice(o.total)}</td>
+                <td><span class="badge status-${o.status}">${o.status}</span></td>
+                <td>
+                    <select class="form-control" style="padding:6px 10px;font-size:13px;max-width:150px"
+                        onchange="handleStatusChange(${o.id}, this.value)"
+                        ${o.status === "cancelled" || o.status === "delivered" ? "disabled" : ""}>
+                        ${STATUSES.map(s => `
+                            <option value="${s}" ${s === o.status ? "selected" : ""}>${s}</option>
+                        `).join("")}
+                    </select>
+                </td>
+            </tr>
+        `).join("");
+    }
+
+    window.handleStatusChange = async function(orderId, newStatus) {
+        const res = await updateOrderStatus(orderId, newStatus);
+        if (res.error) { toast(res.error, "error"); return; }
+
+        const order = allOrders.find(o => o.id === orderId);
+        if (order) order.status = newStatus;
+
+        toast(`Order #${orderId} → ${newStatus}`, "success");
+        render();
+    };
+
+    window.showDetail = function(orderId) {
+        const o = allOrders.find(x => x.id === orderId);
+        if (!o) return;
+
+        document.getElementById("detail-title").textContent = `Order #${o.id}`;
+        document.getElementById("detail-body").innerHTML = `
+            <div style="margin-bottom:16px">
+                <div class="flex-between" style="margin-bottom:10px">
+                    <span class="badge status-${o.status}">${o.status}</span>
+                    <span style="font-size:13px;color:var(--muted)">${o.date}</span>
+                </div>
+                ${o.note ? `<div class="alert alert-info" style="margin-bottom:12px">📝 ${o.note}</div>` : ""}
+            </div>
+            <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px">
+                <table style="width:100%;font-size:13px">
+                    <thead>
+                        <tr>
+                            <th style="padding:10px 14px;background:var(--bg);text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:0.7px">Product</th>
+                            <th style="padding:10px 14px;background:var(--bg);text-align:center;color:var(--muted);font-size:11px;text-transform:uppercase">Qty</th>
+                            <th style="padding:10px 14px;background:var(--bg);text-align:right;color:var(--muted);font-size:11px;text-transform:uppercase">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${o.items.map(item => `
+                            <tr style="border-top:1px solid var(--border)">
+                                <td style="padding:10px 14px;font-weight:500">${item.product_name}</td>
+                                <td style="padding:10px 14px;text-align:center;color:var(--muted)">× ${item.quantity}</td>
+                                <td style="padding:10px 14px;text-align:right;font-weight:600">${formatPrice(item.subtotal)}</td>
+                            </tr>
+                        `).join("")}
+                    </tbody>
+                </table>
+            </div>
+            <div style="text-align:right;font-size:17px;font-weight:800;color:var(--primary)">
+                Total: ${formatPrice(o.total)}
+            </div>
+        `;
+        document.getElementById("detail-modal").classList.add("open");
+    };
+
+    window.closeDetail = function() {
+        document.getElementById("detail-modal").classList.remove("open");
+    };
+
+    document.getElementById("detail-modal").addEventListener("click", e => {
+        if (e.target === document.getElementById("detail-modal")) closeDetail();
+    });
+
+    load();
+</script>
+</body>
+</html>
