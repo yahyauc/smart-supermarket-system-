@@ -29,9 +29,6 @@
             <a href="./admin-orders.html" class="sidebar-link">
                 <span class="s-icon">🧾</span> Orders
             </a>
-            <a href="./admin-releve.html" class="sidebar-link">
-                <span class="s-icon">📄</span> Statement
-            </a>
             <a href="./admin-chatbot.html" class="sidebar-link">
                 <span class="s-icon">🤖</span> AI Assistant
             </a>
@@ -135,8 +132,36 @@
                 <input type="number" id="f-stock" class="form-control" placeholder="0" min="0">
             </div>
             <div class="form-group">
-                <label class="form-label">Image URL</label>
-                <input type="text" id="f-image" class="form-control" placeholder="https://...">
+                <label class="form-label">Product Image</label>
+                <!-- Hidden URL field -->
+                <input type="hidden" id="f-image">
+
+                <!-- Upload zone -->
+                <div id="upload-zone"
+                    onclick="document.getElementById('f-image-file').click()"
+                    style="border:2px dashed var(--border2);border-radius:var(--radius);padding:16px;text-align:center;cursor:pointer;transition:border-color 0.2s;background:var(--bg)">
+                    <div id="upload-placeholder">
+                        <div style="font-size:28px;margin-bottom:6px">📷</div>
+                        <div style="font-size:13px;font-weight:600;color:var(--text-2)">Click to upload an image</div>
+                        <div style="font-size:11px;color:var(--muted);margin-top:3px">PNG, JPG, WEBP — Max 5MB</div>
+                    </div>
+                    <div id="upload-preview" style="display:none;position:relative">
+                        <img id="img-preview-el" src="" alt="Preview"
+                            style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:1px solid var(--border);">
+                        <button onclick="clearImage(event)" title="Remove image"
+                            style="position:absolute;top:-8px;right:calc(50% - 53px);width:22px;height:22px;border-radius:50%;background:var(--red);color:white;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✕</button>
+                    </div>
+                </div>
+
+                <input type="file" id="f-image-file" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
+
+                <!-- Upload progress -->
+                <div id="upload-progress" style="display:none;margin-top:8px">
+                    <div style="height:4px;background:var(--border);border-radius:4px;overflow:hidden">
+                        <div id="upload-bar" style="height:100%;width:0%;background:var(--primary);transition:width 0.3s"></div>
+                    </div>
+                    <div style="font-size:11px;color:var(--muted);margin-top:4px">Uploading...</div>
+                </div>
             </div>
         </div>
         <div class="form-group">
@@ -212,10 +237,16 @@
                 <td style="color:var(--muted);font-family:var(--font-mono);font-size:13px">#${p.id}</td>
                 <td>
                     <div style="display:flex;align-items:center;gap:10px">
-                        <span style="font-size:22px">${categoryEmoji(p.category)}</span>
+                        ${p.image_url
+                            ? `<img src="${p.image_url}" alt="${p.name}"
+                                style="width:42px;height:42px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0;"
+                                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+                            : ''
+                        }
+                        <span style="font-size:22px;${p.image_url ? 'display:none' : ''}">${categoryEmoji(p.category)}</span>
                         <div>
                             <div style="font-weight:600">${p.name}</div>
-                            ${p.description ? `<div style="font-size:12px;color:var(--muted)">${p.description.slice(0,40)}${p.description.length > 40 ? '…' : ''}</div>` : ''}
+                            ${p.description ? `<div style="font-size:12px;color:var(--muted)">${p.description.slice(0,40)}${p.description.length > 40 ? '...' : ''}</div>` : ''}
                         </div>
                     </div>
                 </td>
@@ -318,6 +349,110 @@
     document.getElementById("modal").addEventListener("click", e => {
         if (e.target === document.getElementById("modal")) closeModal();
     });
+
+    // ── Image upload handler ────────────────────────────────────
+    window.handleImageUpload = async function(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const progress = document.getElementById("upload-progress");
+        const bar      = document.getElementById("upload-bar");
+        progress.style.display = "block";
+
+        // Animate bar
+        let pct = 0;
+        const timer = setInterval(() => {
+            pct = Math.min(pct + 15, 85);
+            bar.style.width = pct + "%";
+        }, 100);
+
+        const formData = new FormData();
+        formData.append("image", file);
+
+        try {
+            const res  = await fetch("http://127.0.0.1:5000/api/products/upload-image", {
+                method: "POST",
+                body: formData
+            });
+            const data = await res.json();
+
+            clearInterval(timer);
+            bar.style.width = "100%";
+
+            if (data.error) {
+                toast(data.error, "error");
+                progress.style.display = "none";
+                return;
+            }
+
+            // Save URL in hidden input
+            document.getElementById("f-image").value = data.image_url;
+
+            // Show preview
+            showUploadPreview(data.image_url);
+            setTimeout(() => { progress.style.display = "none"; }, 500);
+            toast("Image uploaded successfully", "success");
+
+        } catch (err) {
+            clearInterval(timer);
+            progress.style.display = "none";
+            toast("Upload failed — is the backend running?", "error");
+        }
+    };
+
+    function showUploadPreview(url) {
+        document.getElementById("upload-placeholder").style.display = "none";
+        document.getElementById("upload-preview").style.display     = "block";
+        document.getElementById("img-preview-el").src = url;
+    }
+
+    function hideUploadPreview() {
+        document.getElementById("upload-placeholder").style.display = "block";
+        document.getElementById("upload-preview").style.display     = "none";
+        document.getElementById("img-preview-el").src = "";
+        document.getElementById("f-image").value = "";
+        document.getElementById("f-image-file").value = "";
+    }
+
+    window.clearImage = function(e) {
+        e.stopPropagation();
+        hideUploadPreview();
+    };
+
+    // Drag & drop support
+    const zone = document.getElementById("upload-zone");
+    zone.addEventListener("dragover", e => { e.preventDefault(); zone.style.borderColor = "var(--primary)"; });
+    zone.addEventListener("dragleave", ()  => { zone.style.borderColor = "var(--border2)"; });
+    zone.addEventListener("drop", e => {
+        e.preventDefault();
+        zone.style.borderColor = "var(--border2)";
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith("image/")) {
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            const input = document.getElementById("f-image-file");
+            input.files = dt.files;
+            handleImageUpload(input);
+        }
+    });
+
+    // Reset image zone when modal opens
+    const origOpenModal = window.openModal;
+    window.openModal = function() {
+        origOpenModal();
+        hideUploadPreview();
+    };
+
+    // Load existing image when editing
+    const origOpenEdit = window.openEdit;
+    window.openEdit = function(id) {
+        origOpenEdit(id);
+        const p = allProducts.find(x => x.id === id);
+        hideUploadPreview();
+        if (p && p.image_url) {
+            setTimeout(() => showUploadPreview(p.image_url), 50);
+        }
+    };
 
     load();
 </script>

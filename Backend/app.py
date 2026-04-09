@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from config import Config
 from models import db
@@ -13,23 +13,25 @@ from routes.stats import stats_bp
 from routes.chatbot import chatbot_bp
 import os
 
-
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Ensure instance folder exists
     os.makedirs(os.path.join(app.root_path, "instance"), exist_ok=True)
+    os.makedirs(os.path.join(app.root_path, "static", "uploads"), exist_ok=True)
 
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    CORS(app, resources={r"/*": {"origins": "*"}})
     db.init_app(app)
-
-    # Register blueprints
     app.register_blueprint(auth_bp,     url_prefix="/api")
     app.register_blueprint(products_bp, url_prefix="/api")
     app.register_blueprint(orders_bp,   url_prefix="/api")
     app.register_blueprint(stats_bp,    url_prefix="/api")
     app.register_blueprint(chatbot_bp,  url_prefix="/api")
+
+    @app.route("/uploads/<filename>")
+    def uploaded_file(filename):
+        uploads_dir = os.path.join(app.root_path, "static", "uploads")
+        return send_from_directory(uploads_dir, filename)
 
     @app.route("/")
     def home():
@@ -51,15 +53,11 @@ def create_app():
 
 
 def _seed_data():
-    """Insert sample data only if the database is empty."""
-
     if User.query.count() == 0:
         admin = User(username="admin", email="admin@smart.ma", role="admin")
         admin.set_password("admin123")
-
         customer = User(username="abdo", email="abdo@smart.ma", role="customer")
         customer.set_password("abdo123")
-
         db.session.add_all([admin, customer])
         db.session.commit()
 

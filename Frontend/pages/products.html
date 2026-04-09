@@ -144,34 +144,40 @@
             return;
         }
 
-        grid.innerHTML = filtered.map(p => `
-            <div class="product-card fade-up">
-                <div class="product-img">${categoryEmoji(p.category)}</div>
-                <div class="product-body">
-                    <div class="product-name">${p.name}</div>
-                    <div class="product-cat">${p.category}</div>
-                    ${p.description ? `<p style="font-size:12px;color:var(--muted);margin-bottom:4px">${p.description}</p>` : ""}
-                    <div class="product-footer">
-                        <div class="product-price">${formatPrice(p.price)}</div>
-                        <button
-                            class="btn-add-cart"
-                            onclick="handleAddToCart(${JSON.stringify(p).replace(/"/g, '&quot;')})"
-                            ${p.stock === 0 ? "disabled" : ""}
-                        >
-                            ${p.stock === 0 ? "Out of stock" : "+ Add"}
-                        </button>
-                    </div>
-                    <div style="margin-top:8px">
-                        ${p.stock === 0
-                            ? `<span class="badge badge-red">Out of stock</span>`
-                            : p.stock <= 5
-                                ? `<span class="badge badge-orange">Only ${p.stock} left</span>`
-                                : `<span class="badge badge-green">In stock</span>`
-                        }
-                    </div>
-                </div>
-            </div>
-        `).join("");
+        grid.innerHTML = filtered.map(p => {
+            const emoji = categoryEmoji(p.category);
+            const imgHTML = p.image_url
+                ? '<div style="width:100%;height:180px;flex-shrink:0;border-bottom:1px solid #e4e7f0;background:#f5f6fa;display:flex;align-items:center;justify-content:center;"><img src="' + p.image_url + '" alt="' + p.name + '" style="max-width:100%;max-height:180px;width:auto;height:auto;object-fit:contain;display:block;"></div>'
+                : '<div style="width:100%;height:180px;flex-shrink:0;border-bottom:1px solid #e4e7f0;display:flex;align-items:center;justify-content:center;background:#f5f6fa;font-size:48px;">' + emoji + '</div>';
+
+            const stockBadgeHTML = p.stock === 0
+                ? '<span class="badge badge-red">Out of stock</span>'
+                : p.stock <= 5
+                    ? '<span class="badge badge-orange">Only ' + p.stock + ' left</span>'
+                    : '<span class="badge badge-green">In stock</span>';
+
+            const descHTML = p.description
+                ? '<p style="font-size:12px;color:var(--muted);margin-bottom:4px">' + p.description + '</p>'
+                : '';
+
+            const btnDisabled = p.stock === 0 ? 'disabled' : '';
+            const btnText     = p.stock === 0 ? 'Out of stock' : '+ Add';
+            const dataProduct = JSON.stringify(p).replace(/"/g, '&quot;');
+
+            return '<div class="product-card fade-up">'
+                + imgHTML
+                + '<div class="product-body">'
+                + '<div class="product-name">' + p.name + '</div>'
+                + '<div class="product-cat">' + p.category + '</div>'
+                + descHTML
+                + '<div class="product-footer">'
+                + '<div class="product-price">' + formatPrice(p.price) + '</div>'
+                + '<button class="btn-add-cart" onclick="handleAddToCart(' + dataProduct + ')" ' + btnDisabled + '>' + btnText + '</button>'
+                + '</div>'
+                + '<div style="margin-top:8px">' + stockBadgeHTML + '</div>'
+                + '</div>'
+                + '</div>';
+        }).join("");
     }
 
     window.handleAddToCart = function(product) {

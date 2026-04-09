@@ -3,6 +3,8 @@ from models import db
 from models.order import Order
 from models.order_item import OrderItem
 from models.product import Product
+from models.user import User
+from utils.email_service import send_order_confirmation
 
 orders_bp = Blueprint("orders", __name__)
 
@@ -65,6 +67,48 @@ def create_order():
         ))
 
     db.session.commit()
+
+    # Send confirmation email in background with app context
+    if user_id:
+        user = User.query.get(user_id)
+        if user and user.email:
+            import threading
+            from flask import current_app
+            app        = current_app._get_current_object()
+            user_email = user.email
+            username   = user.username
+
+            # Detach ALL data before entering thread (avoid SQLAlchemy session issues)
+            order_id   = order.id
+            order_note = order.note or ""
+            order_date = order.created_at
+
+            # Calculate total manually from items list already in memory
+            order_items = []
+            running_total = 0.0
+            for i in order.items:
+                price    = float(i.price or 0)
+                quantity = int(i.quantity or 1)
+                subtotal = price * quantity
+                running_total += subtotal
+                order_items.append({
+                    "product_name": i.product_name or "Product",
+                    "quantity":     quantity,
+                    "price":        price,
+                    "subtotal":     subtotal
+                })
+            order_total = round(running_total, 2)
+
+            def send_in_background():
+                with app.app_context():
+                    from utils.email_service import send_order_confirmation_data
+                    send_order_confirmation_data(
+                        user_email, username,
+                        order_id, order_total, order_note, order_date, order_items
+                    )
+
+            threading.Thread(target=send_in_background, daemon=True).start()
+
     return jsonify({"message": "Order placed successfully", "order": order.to_dict()}), 201
 
 
