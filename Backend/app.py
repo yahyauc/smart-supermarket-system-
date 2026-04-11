@@ -11,6 +11,8 @@ from routes.products import products_bp
 from routes.orders import orders_bp
 from routes.stats import stats_bp
 from routes.chatbot import chatbot_bp
+from routes.reviews import reviews_bp
+from models.review import Review
 import os
 
 def create_app():
@@ -27,6 +29,7 @@ def create_app():
     app.register_blueprint(orders_bp,   url_prefix="/api")
     app.register_blueprint(stats_bp,    url_prefix="/api")
     app.register_blueprint(chatbot_bp,  url_prefix="/api")
+    app.register_blueprint(reviews_bp,  url_prefix="/api")
 
     @app.route("/uploads/<filename>")
     def uploaded_file(filename):
@@ -80,7 +83,5 @@ def _seed_data():
 
 app = create_app()
 
-
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(debug=True, port=5000)

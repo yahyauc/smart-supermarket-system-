@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Vision Models — Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        .vision-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+
+        .model-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.2s;
+        }
+
+        .model-card:hover { box-shadow: var(--shadow); }
+
+        .model-header {
+            padding: 20px 22px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .model-title-group {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .model-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .model-icon.blue   { background: var(--primary-bg); }
+        .model-icon.orange { background: var(--orange-bg); }
+
+        .model-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .model-subtitle {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* Toggle switch */
+        .toggle-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        .toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .toggle input { display: none; }
+
+        .toggle-track {
+            position: absolute;
+            inset: 0;
+            background: var(--border2);
+            border-radius: 24px;
+            transition: background 0.25s;
+        }
+
+        .toggle-thumb {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            transition: transform 0.25s;
+        }
+
+        .toggle input:checked ~ .toggle-track { background: var(--primary); }
+        .toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
+
+        /* Camera feed area */
+        .camera-feed {
+            position: relative;
+            background: #0f1117;
+            height: 240px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .camera-offline {
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .camera-offline .cam-icon { font-size: 42px; margin-bottom: 10px; }
+        .camera-offline p { font-size: 13px; }
+
+        .camera-online {
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Simulated detection boxes */
+        .detection-canvas {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        .det-box {
+            position: absolute;
+            border: 2px solid #22c55e;
+            border-radius: 4px;
+            animation: pulse-box 2s infinite;
+        }
+
+        .det-label {
+            position: absolute;
+            top: -22px;
+            left: 0;
+            background: #22c55e;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .det-box.empty {
+            border-color: #ef4444;
+        }
+
+        .det-box.empty .det-label {
+            background: #ef4444;
+        }
+
+        @keyframes pulse-box {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.6; }
+        }
+
+        /* Status indicator */
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .status-dot.online  { background: var(--green); animation: blink 1.5s infinite; }
+        .status-dot.offline { background: var(--muted); }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.3; }
+        }
+
+        /* Model info section */
+        .model-info {
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 13px;
+        }
+
+        .info-row:not(:last-child) {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-key   { color: var(--muted); font-weight: 500; }
+        .info-value { color: var(--text);  font-weight: 600; }
+
+        /* Detection results */
+        .detection-results {
+            padding: 16px 22px;
+        }
+
+        .result-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            margin-bottom: 10px;
+        }
+
+        .result-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: var(--radius);
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .result-item.detected {
+            background: var(--green-bg);
+            color: var(--green);
+        }
+
+        .result-item.empty {
+            background: var(--red-bg);
+            color: var(--red);
+        }
+
+        .result-item.counting {
+            background: var(--primary-bg);
+            color: var(--primary);
+        }
+
+        .result-count {
+            font-weight: 800;
+            font-size: 15px;
+        }
+
+        /* Scan button */
+        .scan-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+            width: 100%;
+            justify-content: center;
+            margin-top: 12px;
+        }
+
+        .scan-btn.blue {
+            background: var(--primary);
+            color: white;
+        }
+
+        .scan-btn.blue:hover { background: var(--primary-h); }
+
+        .scan-btn.orange {
+            background: var(--orange);
+            color: white;
+        }
+
+        .scan-btn.orange:hover { opacity: 0.9; }
+
+        .scan-btn:disabled {
+            background: var(--muted);
+            cursor: not-allowed;
+        }
+
+        /* Scanning animation */
+        .scanning-bar {
+            display: none;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            background-size: 200% 100%;
+            animation: scan 1.5s linear infinite;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        @keyframes scan {
+            0%   { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* Overall stats bar */
+        .stats-bar {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px 24px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stat-item {
+            text-align: center;
+            border-right: 1px solid var(--border);
+            padding: 0 16px;
+        }
+
+        .stat-item:last-child { border-right: none; }
+        .stat-num  { font-size: 26px; font-weight: 800; color: var(--text); }
+        .stat-desc { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+
+        @media (max-width: 900px) {
+            .vision-grid { grid-template-columns: 1fr; }
+            .stats-bar   { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="layout-admin">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+                <div class="sidebar-logo">
+            <div class="brand-icon"><i class="fa-solid fa-cart-shopping" style="color:white;font-size:15px"></i></div>
+            <div class="sidebar-logo-text">
+                <h3>Smart Supermarket</h3>
+                <span>Admin Panel</span>
+            </div>
+        </div>
+                <nav class="sidebar-nav">
+            <div class="nav-section-label">Main</div>
+            <a href="./admin-dashboard.html" class="sidebar-link">
+                <i class="fa-solid fa-chart-line s-icon"></i> Dashboard
+            </a>
+            <a href="./admin-products.html" class="sidebar-link">
+                <i class="fa-solid fa-box s-icon"></i> Products
+            </a>
+            <a href="./admin-orders.html" class="sidebar-link">
+                <i class="fa-solid fa-receipt s-icon"></i> Orders
+            </a>
+            <a href="./admin-releve.html" class="sidebar-link">
+                <i class="fa-solid fa-file-lines s-icon"></i> Statement
+            </a>
+            <a href="./admin-chatbot.html" class="sidebar-link">
+                <i class="fa-solid fa-robot s-icon"></i> AI Assistant
+            </a>
+            <a href="./admin-vision.html" class="sidebar-link active">
+                <i class="fa-solid fa-camera s-icon"></i> Vision AI
+            </a>
+            <div class="nav-section-label">Store</div>
+            <a href="./products.html" class="sidebar-link">
+                <i class="fa-solid fa-store s-icon"></i> Storefront
+            </a>
+            <a href="../index.html" class="sidebar-link">
+                <i class="fa-solid fa-house s-icon"></i> Home
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <div class="user-avatar" id="admin-avatar">A</div>
+                <div class="user-info">
+                    <strong id="admin-name">Admin</strong>
+                    <small>Administrator</small>
+                </div>
+                <button class="btn-logout" onclick="doLogout()" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="admin-main">
+
+        <div class="page-header">
+            <h1>AI Vision Models</h1>
+            <p>Camera-based detection systems for smart shelf monitoring</p>
+        </div>
+
+        <!-- Global stats -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-num" id="stat-models">2</div>
+                <div class="stat-desc">Total Models</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="stat-active" style="color:var(--green)">0</div>
+                <div class="stat-desc">Active</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="stat-empty" style="color:var(--red)">—</div>
+                <div class="stat-desc">Empty Slots</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="stat-items" style="color:var(--primary)">—</div>
+                <div class="stat-desc">Items Counted</div>
+            </div>
+        </div>
+
+        <!-- Models grid -->
+        <div class="vision-grid">
+
+            <!-- Model 1 — Empty Shelf Detection -->
+            <div class="model-card">
+                <div class="model-header">
+                    <div class="model-title-group">
+                        <div class="model-icon blue">🕳️</div>
+                        <div>
+                            <div class="model-name">Empty Shelf Detector</div>
+                            <div class="model-subtitle">
+                                <span class="status-dot offline" id="dot-1"></span>
+                                <span id="status-text-1">Offline</span>
+                            </div>
+                        </div>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="toggle-1" onchange="toggleModel(1, this.checked)">
+                        <div class="toggle-track"></div>
+                        <div class="toggle-thumb"></div>
+                    </label>
+                </div>
+
+                <!-- Camera feed -->
+                <div class="camera-feed" id="feed-1">
+                    <div class="camera-offline" id="offline-1">
+                        <div class="cam-icon">📷</div>
+                        <p>Camera offline</p>
+                        <p style="font-size:11px;margin-top:4px">Enable the model to start</p>
+                    </div>
+                    <div class="detection-canvas" id="canvas-1">
+                        <!-- Simulated shelf image background -->
+                        <div style="width:100%;height:100%;background:linear-gradient(180deg,#1a1a2e 0%,#16213e 100%);display:flex;align-items:center;justify-content:center;position:relative">
+                            <div style="color:rgba(255,255,255,0.15);font-size:13px;letter-spacing:2px;text-transform:uppercase">Live Camera Feed</div>
+                            <!-- Detection boxes -->
+                            <div class="det-box empty"    style="top:20%;left:5%;width:28%;height:55%">
+                                <div class="det-label">Empty Slot</div>
+                            </div>
+                            <div class="det-box"          style="top:20%;left:36%;width:28%;height:55%">
+                                <div class="det-label">Stocked</div>
+                            </div>
+                            <div class="det-box empty"    style="top:20%;left:67%;width:28%;height:55%">
+                                <div class="det-label">Empty Slot</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="scanning-bar" id="scan-bar-1"></div>
+                </div>
+
+                <!-- Model info -->
+                <div class="model-info">
+                    <div class="info-row">
+                        <span class="info-key">Model Type</span>
+                        <span class="info-value">YOLOv8 — Object Detection</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-key">Input</span>
+                        <span class="info-value">Camera Feed (RGB)</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-key">Accuracy</span>
+                        <span class="info-value">94.2%</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-key">Last Scan</span>
+                        <span class="info-value" id="last-scan-1">—</span>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div class="detection-results">
+                    <div class="result-title">Detection Results</div>
+                    <div id="results-1">
+                        <div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">
+                            Enable model to see results
+                        </div>
+                    </div>
+                    <button class="scan-btn blue" id="btn-1" onclick="runScan(1)" disabled>
+                        Run Detection
+                    </button>
+                </div>
+            </div>
+
+            <!-- Model 2 — Product Counter -->
+            <div class="model-card">
+                <div class="model-header">
+                    <div class="model-title-group">
+                        <div class="model-icon orange">🔢</div>
+                        <div>
+                            <div class="model-name">Product Counter</div>
+                            <div class="model-subtitle">
+                                <span class="status-dot offline" id="dot-2"></span>
+                                <span id="status-text-2">Offline</span>
+                            </div>
+                        </div>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="toggle-2" onchange="toggleModel(2, this.checked)">
+                        <div class="toggle-track"></div>
+                        <div class="toggle-thumb"></div>
+                    </label>
+                </div>
+
+                <!-- Camera feed -->
+                <div class="camera-feed" id="feed-2">
+                    <div class="camera-offline" id="offline-2">
+                        <div class="cam-icon">📷</div>
+                        <p>Camera offline</p>
+                        <p style="font-size:11px;margin-top:4px">Enable the model to start</p>
+                    </div>
+                    <div class="detection-canvas" id="canvas-2">
+                        <div style="width:100%;height:100%;background:linear-gradient(180deg,#0d1b2a 0%,#1b2838 100%);display:flex;align-items:center;justify-content:center;position:relative">
+                            <div style="color:rgba(255,255,255,0.15);font-size:13px;letter-spacing:2px;text-transform:uppercase">Live Camera Feed</div>
+                            <!-- Product detection boxes -->
+                            <div class="det-box" style="top:15%;left:8%;width:18%;height:35%;border-color:#4f8ef7">
+                                <div class="det-label" style="background:#4f8ef7">Milk x3</div>
+                            </div>
+                            <div class="det-box" style="top:15%;left:30%;width:18%;height:35%;border-color:#4f8ef7">
+                                <div class="det-label" style="background:#4f8ef7">Juice x2</div>
+                            </div>
+                            <div class="det-box" style="top:55%;left:8%;width:18%;height:35%;border-color:#4f8ef7">
+                                <div class="det-label" style="background:#4f8ef7">Bread x5</div>
+                            </div>
+                            <div class="det-box" style="top:55%;left:30%;width:18%;height:35%;border-color:#4f8ef7">
+                                <div class="det-label" style="background:#4f8ef7">Cheese x1</div>
+                            </div>
+                            <div class="det-box" style="top:15%;left:55%;width:38%;height:75%;border-color:#eab308">
+                                <div class="det-label" style="background:#eab308;color:#000">Total: 11 items</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="scanning-bar" id="scan-bar-2" style="background:linear-gradient(90deg,transparent,var(--orange),transparent)"></div>
+                </div>
+
+                <!-- Model info -->
+                <div class="model-info">
+                    <div class="info-row">
+                        <span class="info-key">Model Type</span>
+                        <span class="info-value">YOLOv8 — Instance Counting</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-key">Input</span>
+                        <span class="info-value">Camera Feed (RGB)</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-key">Accuracy</span>
+                        <span class="info-value">91.8%</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-key">Last Scan</span>
+                        <span class="info-value" id="last-scan-2">—</span>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div class="detection-results">
+                    <div class="result-title">Detection Results</div>
+                    <div id="results-2">
+                        <div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">
+                            Enable model to see results
+                        </div>
+                    </div>
+                    <button class="scan-btn orange" id="btn-2" onclick="runScan(2)" disabled>
+                        🔢 Run Count
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Integration note -->
+        <div class="card" style="border-left:4px solid var(--primary)">
+            <div class="flex gap-12" style="align-items:flex-start">
+                <span style="font-size:24px">🔗</span>
+                <div>
+                    <div style="font-weight:700;font-size:15px;margin-bottom:6px">Model Integration</div>
+                    <p style="font-size:13px;color:var(--text-2);line-height:1.7;margin:0">
+                        These models are designed to connect to real camera feeds via the backend API.
+                        Once your trained models are ready, integrate them by calling
+                        <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;color:var(--primary)">POST /api/vision/detect</code>
+                        with the camera frame. The results will update automatically in this dashboard.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script type="module">
+    import { requireAdmin } from '../js/api.js';
+
+    const user = requireAdmin();
+    if (!user) throw new Error("Not admin");
+
+    document.getElementById("admin-name").textContent   = user.username;
+    document.getElementById("admin-avatar").textContent = user.username[0].toUpperCase();
+
+    window.doLogout = function() {
+        localStorage.removeItem("user");
+        window.location.href = "./login.html";
+    };
+
+    let activeModels = 0;
+
+    // ── Toggle model on/off ───────────────────────────────────────
+    window.toggleModel = function(modelId, isOn) {
+        const dot        = document.getElementById("dot-" + modelId);
+        const statusText = document.getElementById("status-text-" + modelId);
+        const offline    = document.getElementById("offline-" + modelId);
+        const canvas     = document.getElementById("canvas-" + modelId);
+        const scanBar    = document.getElementById("scan-bar-" + modelId);
+        const btn        = document.getElementById("btn-" + modelId);
+
+        if (isOn) {
+            // Simulate camera starting
+            dot.className        = "status-dot offline";
+            statusText.textContent = "Starting...";
+
+            setTimeout(() => {
+                dot.className          = "status-dot online";
+                statusText.textContent = "Online";
+                offline.style.display  = "none";
+                canvas.style.display   = "block";
+                scanBar.style.display  = "block";
+                btn.disabled           = false;
+                activeModels++;
+                document.getElementById("stat-active").textContent = activeModels;
+            }, 1500);
+
+        } else {
+            dot.className          = "status-dot offline";
+            statusText.textContent = "Offline";
+            offline.style.display  = "block";
+            canvas.style.display   = "none";
+            scanBar.style.display  = "none";
+            btn.disabled           = true;
+            activeModels           = Math.max(0, activeModels - 1);
+            document.getElementById("stat-active").textContent = activeModels;
+
+            document.getElementById("results-" + modelId).innerHTML = `
+                <div style="text-align:center;padding:16px;color:var(--muted);font-size:13px">
+                    Enable model to see results
+                </div>`;
+        }
+    };
+
+    // ── Run detection simulation ──────────────────────────────────
+    window.runScan = function(modelId) {
+        const btn      = document.getElementById("btn-" + modelId);
+        const results  = document.getElementById("results-" + modelId);
+        const lastScan = document.getElementById("last-scan-" + modelId);
+
+        btn.disabled       = true;
+        btn.textContent    = "Scanning...";
+        results.innerHTML  = '<div style="text-align:center;padding:16px"><span class="spinner"></span></div>';
+
+        setTimeout(() => {
+            const now = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+            lastScan.textContent = now;
+
+            if (modelId === 1) {
+                // Empty shelf detection results
+                const emptyCount = Math.floor(Math.random() * 3) + 1;
+                const stockedCount = 6 - emptyCount;
+
+                results.innerHTML = `
+                    <div class="result-item empty">
+                        <span>Empty Slots Detected</span>
+                        <span class="result-count">${emptyCount}</span>
+                    </div>
+                    <div class="result-item detected">
+                        <span>Stocked Slots</span>
+                        <span class="result-count">${stockedCount}</span>
+                    </div>
+                    <div class="result-item ${emptyCount > 1 ? 'empty' : 'detected'}">
+                        <span>Alert Level</span>
+                        <span class="result-count">${emptyCount > 1 ? 'High' : 'Low'}</span>
+                    </div>`;
+
+                document.getElementById("stat-empty").textContent = emptyCount;
+
+            } else {
+                // Product counting results
+                const products = [
+                    { name: "Milk",   count: Math.floor(Math.random() * 5) + 1 },
+                    { name: "Juice",  count: Math.floor(Math.random() * 4) + 1 },
+                    { name: "Bread",  count: Math.floor(Math.random() * 6) + 1 },
+                    { name: "Cheese", count: Math.floor(Math.random() * 3) + 1 },
+                ];
+                const total = products.reduce((s, p) => s + p.count, 0);
+
+                results.innerHTML = products.map(p => `
+                    <div class="result-item counting">
+                        <span>${p.name}</span>
+                        <span class="result-count">${p.count} units</span>
+                    </div>`).join("") + `
+                    <div class="result-item detected" style="margin-top:8px">
+                        <span><strong>Total Items</strong></span>
+                        <span class="result-count">${total}</span>
+                    </div>`;
+
+                document.getElementById("stat-items").textContent = total;
+            }
+
+            btn.disabled    = false;
+            btn.textContent = modelId === 1 ? "Run Detection" : "🔢 Run Count";
+
+        }, 2500);
+    };
+</script>
+</body>
+</html>

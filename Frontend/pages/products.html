@@ -5,6 +5,294 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Products — Smart Supermarket</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        /* ── Product Detail Modal ── */
+        .product-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 20, 40, 0.5);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(3px);
+        }
+
+        .product-modal-overlay.open {
+            display: flex;
+        }
+
+        .product-modal {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            width: 100%;
+            max-width: 780px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            animation: modalIn 0.25s ease;
+            position: relative;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(24px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: var(--bg);
+            color: var(--muted);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .modal-close-btn:hover { background: var(--border2); color: var(--text); }
+
+        .modal-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .modal-image {
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+            overflow: hidden;
+        }
+
+        .modal-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .modal-image .emoji-placeholder {
+            font-size: 80px;
+            opacity: 0.35;
+        }
+
+        .modal-info {
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .modal-category {
+            display: inline-block;
+            padding: 3px 12px;
+            background: var(--primary-bg);
+            color: var(--primary);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .modal-product-name {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+        }
+
+        .modal-stars {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stars { display: flex; gap: 2px; }
+        .star  { font-size: 16px; color: var(--border2); }
+        .star.filled { color: #f59e0b; }
+
+        .modal-price {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -1px;
+        }
+
+        .modal-details {
+            background: var(--bg);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: flex-start;
+            padding: 9px 14px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+            gap: 12px;
+        }
+
+        .detail-row:last-child { border-bottom: none; }
+        .detail-key   { color: var(--muted); font-weight: 600; min-width: 90px; flex-shrink: 0; }
+        .detail-value { color: var(--text); font-weight: 500; }
+
+        .modal-cart-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: auto;
+            padding-top: 6px;
+        }
+
+        .qty-ctrl {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--border2);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .qty-ctrl button {
+            width: 34px;
+            height: 38px;
+            border: none;
+            background: var(--bg);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--text);
+            transition: background 0.15s;
+        }
+
+        .qty-ctrl button:hover { background: var(--border); }
+
+        .qty-ctrl span {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            border-left: 1px solid var(--border2);
+            border-right: 1px solid var(--border2);
+        }
+
+        .modal-add-btn {
+            flex: 1;
+            padding: 10px 18px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .modal-add-btn:hover    { background: var(--primary-h); }
+        .modal-add-btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+        /* Reviews inside modal */
+        .modal-reviews {
+            padding: 22px 28px;
+            border-top: 1px solid var(--border);
+        }
+
+        .reviews-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .reviews-title { font-size: 15px; font-weight: 700; }
+
+        .review-item {
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .review-item:last-child { border-bottom: none; }
+
+        .review-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .reviewer {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .reviewer-av {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .reviewer-name { font-size: 13px; font-weight: 700; }
+        .reviewer-date { font-size: 11px; color: var(--muted); }
+        .review-text   { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+
+        /* Write review */
+        .write-review { margin-top: 16px; }
+        .write-review h4 { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+
+        .star-picker {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+
+        .star-pick {
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--border2);
+            transition: color 0.1s;
+            user-select: none;
+        }
+
+        .star-pick.selected { color: #f59e0b; }
+
+        .no-reviews {
+            text-align: center;
+            padding: 24px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        @media (max-width: 640px) {
+            .modal-body { grid-template-columns: 1fr; }
+            .modal-image { min-height: 200px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+        }
+    </style>
 </head>
 <body>
 
@@ -12,27 +300,18 @@
 
 <div style="max-width:1200px;margin:0 auto;padding:32px 24px">
 
-    <!-- Header -->
     <div class="flex-between mb-24">
         <div>
             <h1>Our Products</h1>
             <p style="color:var(--muted);margin-top:4px">Fresh groceries delivered to your door</p>
-        </div>
-        <div id="cart-summary" style="display:none" class="card" style="padding:12px 18px">
         </div>
     </div>
 
     <!-- Filters -->
     <div class="card mb-24" style="padding:16px 20px">
         <div class="flex gap-12" style="flex-wrap:wrap;align-items:center">
-            <input
-                type="text"
-                id="search-input"
-                class="form-control"
-                placeholder="🔍 Search products..."
-                style="max-width:260px"
-                oninput="filterProducts()"
-            >
+            <input type="text" id="search-input" class="form-control"
+                placeholder="Search products..." style="max-width:260px" oninput="filterProducts()">
             <div id="category-filters" class="flex gap-8" style="flex-wrap:wrap"></div>
             <button class="btn btn-outline btn-sm" onclick="clearFilters()" style="margin-left:auto">
                 Clear filters
@@ -40,10 +319,8 @@
         </div>
     </div>
 
-    <!-- Results count -->
     <p id="results-count" class="text-muted mb-16"></p>
 
-    <!-- Products grid -->
     <div id="products-grid" class="products-grid">
         <div class="flex-center" style="grid-column:1/-1;padding:60px">
             <span class="spinner"></span>
@@ -51,120 +328,113 @@
     </div>
 </div>
 
-<!-- Toast container -->
+<!-- Product Detail Modal -->
+<div class="product-modal-overlay" id="product-modal" onclick="handleOverlayClick(event)">
+    <div class="product-modal" id="modal-content">
+        <button class="modal-close-btn" onclick="closeModal()">&#10005;</button>
+        <div id="modal-inner"></div>
+    </div>
+</div>
+
 <div class="toast-container" id="toast-container"></div>
 
 <script type="module">
     import { getProducts, getCategories } from '../js/api.js';
     import { addToCart, buildNavbar, toast, categoryEmoji, formatPrice } from '../js/app.js';
+    import { getUser } from '../js/api.js';
 
     buildNavbar('products');
 
-    let allProducts = [];
-    let activeCategory = "all";
+    const API_URL = "http://127.0.0.1:5000/api";
+    const user    = getUser();
 
-    // ── Load categories ──────────────────────────────────────────
+    let allProducts    = [];
+    let activeCategory = "all";
+    let modalQty       = 1;
+    let modalProduct   = null;
+    let selectedRating = 0;
+
+    // ── Categories ────────────────────────────────────────────────
     async function loadCategories() {
-        const cats = await getCategories();
+        const cats      = await getCategories();
         const container = document.getElementById("category-filters");
 
         const all = document.createElement("button");
-        all.className = "btn btn-primary btn-sm";
-        all.id = "cat-all";
+        all.className   = "btn btn-primary btn-sm";
+        all.id          = "cat-all";
         all.textContent = "All";
-        all.onclick = () => setCategory("all");
+        all.onclick     = () => setCategory("all");
         container.appendChild(all);
 
         cats.forEach(cat => {
-            const btn = document.createElement("button");
-            btn.className = "btn btn-outline btn-sm";
-            btn.id = `cat-${cat}`;
-            btn.textContent = `${categoryEmoji(cat)} ${cat}`;
-            btn.onclick = () => setCategory(cat);
+            const btn       = document.createElement("button");
+            btn.className   = "btn btn-outline btn-sm";
+            btn.id          = "cat-" + cat;
+            btn.textContent = cat;
+            btn.onclick     = () => setCategory(cat);
             container.appendChild(btn);
         });
     }
 
     function setCategory(cat) {
         activeCategory = cat;
-
-        document.querySelectorAll("[id^='cat-']").forEach(btn => {
-            btn.className = "btn btn-outline btn-sm";
-        });
-
-        const active = document.getElementById(`cat-${cat}`);
+        document.querySelectorAll("[id^='cat-']").forEach(btn => btn.className = "btn btn-outline btn-sm");
+        const active = document.getElementById("cat-" + cat);
         if (active) active.className = "btn btn-primary btn-sm";
-
         renderProducts();
     }
 
-    // ── Load products ────────────────────────────────────────────
+    // ── Products ──────────────────────────────────────────────────
     async function loadProducts() {
         allProducts = await getProducts();
         renderProducts();
     }
 
-    function filterProducts() {
-        renderProducts();
-    }
+    window.filterProducts = function() { renderProducts(); };
 
-    function clearFilters() {
+    window.clearFilters = function() {
         document.getElementById("search-input").value = "";
         setCategory("all");
-    }
+    };
 
     function renderProducts() {
         const search = document.getElementById("search-input").value.toLowerCase().trim();
         const grid   = document.getElementById("products-grid");
 
         let filtered = allProducts;
-
-        if (activeCategory !== "all") {
-            filtered = filtered.filter(p => p.category === activeCategory);
-        }
-
-        if (search) {
-            filtered = filtered.filter(p =>
-                p.name.toLowerCase().includes(search) ||
-                p.category.toLowerCase().includes(search) ||
-                (p.description || "").toLowerCase().includes(search)
-            );
-        }
+        if (activeCategory !== "all") filtered = filtered.filter(p => p.category === activeCategory);
+        if (search) filtered = filtered.filter(p =>
+            p.name.toLowerCase().includes(search) ||
+            p.category.toLowerCase().includes(search) ||
+            (p.description || "").toLowerCase().includes(search)
+        );
 
         document.getElementById("results-count").textContent =
-            `Showing ${filtered.length} product${filtered.length !== 1 ? "s" : ""}`;
+            "Showing " + filtered.length + " product" + (filtered.length !== 1 ? "s" : "");
 
         if (!filtered.length) {
-            grid.innerHTML = `
-                <div class="empty-state" style="grid-column:1/-1">
-                    <div class="empty-icon">🔍</div>
-                    <h3>No products found</h3>
-                    <p>Try a different search or category</p>
-                </div>`;
+            grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><h3>No products found</h3><p>Try a different search or category</p></div>';
             return;
         }
 
         grid.innerHTML = filtered.map(p => {
-            const emoji = categoryEmoji(p.category);
+            const emoji   = categoryEmoji(p.category);
             const imgHTML = p.image_url
-                ? '<div style="width:100%;height:180px;flex-shrink:0;border-bottom:1px solid #e4e7f0;background:#f5f6fa;display:flex;align-items:center;justify-content:center;"><img src="' + p.image_url + '" alt="' + p.name + '" style="max-width:100%;max-height:180px;width:auto;height:auto;object-fit:contain;display:block;"></div>'
+                ? '<div style="width:100%;height:180px;flex-shrink:0;border-bottom:1px solid #e4e7f0;background:#ffffff ;display:flex;align-items:center;justify-content:center;"><img src="' + p.image_url + '" alt="' + p.name + '" style="max-width:100%;max-height:180px;object-fit:contain;"></div>'
                 : '<div style="width:100%;height:180px;flex-shrink:0;border-bottom:1px solid #e4e7f0;display:flex;align-items:center;justify-content:center;background:#f5f6fa;font-size:48px;">' + emoji + '</div>';
 
-            const stockBadgeHTML = p.stock === 0
+            const stockBadge = p.stock === 0
                 ? '<span class="badge badge-red">Out of stock</span>'
                 : p.stock <= 5
                     ? '<span class="badge badge-orange">Only ' + p.stock + ' left</span>'
                     : '<span class="badge badge-green">In stock</span>';
 
-            const descHTML = p.description
-                ? '<p style="font-size:12px;color:var(--muted);margin-bottom:4px">' + p.description + '</p>'
-                : '';
-
+            const descHTML    = p.description ? '<p style="font-size:12px;color:var(--muted);margin-bottom:4px">' + p.description + '</p>' : '';
             const btnDisabled = p.stock === 0 ? 'disabled' : '';
             const btnText     = p.stock === 0 ? 'Out of stock' : '+ Add';
             const dataProduct = JSON.stringify(p).replace(/"/g, '&quot;');
 
-            return '<div class="product-card fade-up">'
+            return '<div class="product-card fade-up" style="cursor:pointer" onclick="openModal(' + p.id + ')">'
                 + imgHTML
                 + '<div class="product-body">'
                 + '<div class="product-name">' + p.name + '</div>'
@@ -172,20 +442,237 @@
                 + descHTML
                 + '<div class="product-footer">'
                 + '<div class="product-price">' + formatPrice(p.price) + '</div>'
-                + '<button class="btn-add-cart" onclick="handleAddToCart(' + dataProduct + ')" ' + btnDisabled + '>' + btnText + '</button>'
+                + '<button class="btn-add-cart" onclick="event.stopPropagation();handleAddToCart(' + dataProduct + ')" ' + btnDisabled + '>' + btnText + '</button>'
                 + '</div>'
-                + '<div style="margin-top:8px">' + stockBadgeHTML + '</div>'
+                + '<div style="margin-top:8px">' + stockBadge + '</div>'
                 + '</div>'
                 + '</div>';
         }).join("");
     }
 
+    // ── Modal ─────────────────────────────────────────────────────
+    window.openModal = async function(productId) {
+        modalProduct = allProducts.find(p => p.id === productId);
+        if (!modalProduct) return;
+
+        modalQty       = 1;
+        selectedRating = 0;
+
+        // Render basic info immediately
+        renderModalInfo();
+
+        // Open overlay
+        document.getElementById("product-modal").classList.add("open");
+        document.body.style.overflow = "hidden";
+
+        // Load reviews async
+        loadModalReviews();
+    };
+
+    function renderModalInfo() {
+        const p       = modalProduct;
+        const emoji   = categoryEmoji(p.category);
+        const imgHTML = p.image_url
+            ? '<img src="' + p.image_url + '" alt="' + p.name + '">'
+            : '<div class="emoji-placeholder">' + emoji + '</div>';
+
+        const stockHTML = p.stock === 0
+            ? '<span class="badge badge-red">Out of stock</span>'
+            : p.stock <= 5
+                ? '<span class="badge badge-orange">Only ' + p.stock + ' left</span>'
+                : '<span class="badge badge-green">In stock</span>';
+
+        document.getElementById("modal-inner").innerHTML = `
+            <div class="modal-body">
+                <div class="modal-image">${imgHTML}</div>
+                <div class="modal-info">
+                    <div><span class="modal-category">${p.category}</span></div>
+                    <div class="modal-product-name">${p.name}</div>
+                    <div class="modal-stars">
+                        <div class="stars" id="modal-stars-display"></div>
+                        <span id="modal-avg-text" style="font-size:13px;color:var(--muted)">Loading reviews...</span>
+                    </div>
+                    <div class="modal-price">${formatPrice(p.price)} ${stockHTML}</div>
+                    <div class="modal-details">
+                        ${p.description ? '<div class="detail-row"><span class="detail-key">Description</span><span class="detail-value">' + p.description + '</span></div>' : ''}
+                        ${p.origin ? '<div class="detail-row"><span class="detail-key">Origin</span><span class="detail-value">' + p.origin + '</span></div>' : ''}
+                        <div class="detail-row">
+                            <span class="detail-key">Category</span>
+                            <span class="detail-value">${p.category}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-key">Stock</span>
+                            <span class="detail-value">${p.stock > 0 ? p.stock + ' units available' : 'Out of stock'}</span>
+                        </div>
+                    </div>
+                    <div class="modal-cart-row">
+                        <div class="qty-ctrl">
+                            <button onclick="changeModalQty(-1)">-</button>
+                            <span id="modal-qty">1</span>
+                            <button onclick="changeModalQty(1)">+</button>
+                        </div>
+                        <button class="modal-add-btn" onclick="handleModalAddToCart()" ${p.stock === 0 ? 'disabled' : ''}>
+                            ${p.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-reviews" id="modal-reviews">
+                <div style="text-align:center;padding:20px"><span class="spinner"></span></div>
+            </div>`;
+    }
+
+    async function loadModalReviews() {
+        try {
+            const res  = await fetch(API_URL + "/products/" + modalProduct.id + "/reviews");
+            const data = await res.json();
+
+            // Update stars
+            renderStars("modal-stars-display", data.average);
+            document.getElementById("modal-avg-text").textContent =
+                data.count > 0 ? data.average + " / 5  (" + data.count + " reviews)" : "No reviews yet";
+
+            renderModalReviews(data);
+        } catch (e) {
+            document.getElementById("modal-reviews").innerHTML = "";
+        }
+    }
+
+    function renderModalReviews(data) {
+        const container = document.getElementById("modal-reviews");
+
+        const reviewsHTML = data.reviews.length
+            ? data.reviews.map(r => {
+                const stars = [1,2,3,4,5].map(s =>
+                    '<span class="star ' + (s <= r.rating ? 'filled' : '') + '">&#9733;</span>'
+                ).join("");
+                return '<div class="review-item">'
+                    + '<div class="review-top">'
+                    + '<div class="reviewer">'
+                    + '<div class="reviewer-av">' + r.username[0].toUpperCase() + '</div>'
+                    + '<div><div class="reviewer-name">' + r.username + '</div>'
+                    + '<div class="reviewer-date">' + r.date + '</div></div>'
+                    + '</div>'
+                    + '<div class="stars">' + stars + '</div>'
+                    + '</div>'
+                    + '<p class="review-text">' + r.comment + '</p>'
+                    + '</div>';
+            }).join("")
+            : '<div class="no-reviews">No reviews yet. Be the first to review this product.</div>';
+
+        const writeForm = user ? `
+            <div class="write-review">
+                <h4>Write a Review</h4>
+                <div id="review-err"></div>
+                <div class="star-picker" id="modal-star-picker">
+                    <span class="star-pick" data-val="1">&#9733;</span>
+                    <span class="star-pick" data-val="2">&#9733;</span>
+                    <span class="star-pick" data-val="3">&#9733;</span>
+                    <span class="star-pick" data-val="4">&#9733;</span>
+                    <span class="star-pick" data-val="5">&#9733;</span>
+                </div>
+                <div class="form-group" style="margin-bottom:10px">
+                    <textarea id="modal-comment" class="form-control" rows="2"
+                        placeholder="Share your experience..."></textarea>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="submitModalReview()">Submit Review</button>
+            </div>` : '<p style="font-size:13px;color:var(--muted);margin-top:12px"><a href="./login.html" style="color:var(--primary);font-weight:600">Sign in</a> to write a review.</p>';
+
+        container.innerHTML = `
+            <div class="reviews-title-row">
+                <span class="reviews-title">Customer Reviews</span>
+                <span class="badge badge-blue">${data.count} review${data.count !== 1 ? 's' : ''}</span>
+            </div>
+            ${reviewsHTML}
+            ${writeForm}`;
+
+        // Attach star picker events
+        document.querySelectorAll(".star-pick").forEach(star => {
+            star.addEventListener("click", () => {
+                selectedRating = parseInt(star.dataset.val);
+                document.querySelectorAll(".star-pick").forEach((s, i) =>
+                    s.classList.toggle("selected", i < selectedRating));
+            });
+            star.addEventListener("mouseover", () => {
+                const val = parseInt(star.dataset.val);
+                document.querySelectorAll(".star-pick").forEach((s, i) =>
+                    s.style.color = i < val ? "#f59e0b" : "");
+            });
+            star.addEventListener("mouseout", () => {
+                document.querySelectorAll(".star-pick").forEach((s, i) =>
+                    s.style.color = i < selectedRating ? "#f59e0b" : "");
+            });
+        });
+    }
+
+    function renderStars(containerId, avg) {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        el.innerHTML = [1,2,3,4,5].map(s =>
+            '<span class="star ' + (s <= Math.round(avg) ? 'filled' : '') + '">&#9733;</span>'
+        ).join("");
+    }
+
+    // ── Submit review ─────────────────────────────────────────────
+    window.submitModalReview = async function() {
+        const comment = document.getElementById("modal-comment").value.trim();
+        const errBox  = document.getElementById("review-err");
+        errBox.innerHTML = "";
+
+        if (!selectedRating) {
+            errBox.innerHTML = '<div class="alert alert-error" style="margin-bottom:8px">Please select a rating.</div>';
+            return;
+        }
+        if (!comment) {
+            errBox.innerHTML = '<div class="alert alert-error" style="margin-bottom:8px">Please write a comment.</div>';
+            return;
+        }
+
+        const res  = await fetch(API_URL + "/products/" + modalProduct.id + "/reviews", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({ user_id: user.id, username: user.username, rating: selectedRating, comment })
+        });
+        const data = await res.json();
+
+        if (data.error) {
+            errBox.innerHTML = '<div class="alert alert-error" style="margin-bottom:8px">' + data.error + '</div>';
+            return;
+        }
+
+        toast("Review submitted", "success");
+        selectedRating = 0;
+        loadModalReviews();
+    };
+
+    // ── Qty & cart ────────────────────────────────────────────────
+    window.changeModalQty = function(delta) {
+        modalQty = Math.max(1, Math.min(modalQty + delta, modalProduct.stock));
+        document.getElementById("modal-qty").textContent = modalQty;
+    };
+
+    window.handleModalAddToCart = function() {
+        for (let i = 0; i < modalQty; i++) addToCart(modalProduct);
+        toast(modalQty + "x " + modalProduct.name + " added to cart", "success");
+    };
+
+    // ── Close modal ───────────────────────────────────────────────
+    window.closeModal = function() {
+        document.getElementById("product-modal").classList.remove("open");
+        document.body.style.overflow = "";
+    };
+
+    window.handleOverlayClick = function(e) {
+        if (e.target === document.getElementById("product-modal")) closeModal();
+    };
+
     window.handleAddToCart = function(product) {
         if (product.stock === 0) return;
         addToCart(product);
-        toast(`${product.name} added to cart`, "success");
+        toast(product.name + " added to cart", "success");
     };
 
+    // ── Init ──────────────────────────────────────────────────────
     await loadCategories();
     await loadProducts();
 </script>

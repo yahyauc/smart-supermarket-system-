@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Statement — Admin</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         .filter-card {
@@ -135,36 +136,39 @@
 
     <!-- Sidebar -->
     <aside class="sidebar">
-        <div class="sidebar-logo">
-            <div class="brand-icon">🛒</div>
+                <div class="sidebar-logo">
+            <div class="brand-icon"><i class="fa-solid fa-cart-shopping" style="color:white;font-size:15px"></i></div>
             <div class="sidebar-logo-text">
                 <h3>Smart Supermarket</h3>
                 <span>Admin Panel</span>
             </div>
         </div>
-        <nav class="sidebar-nav">
+                <nav class="sidebar-nav">
             <div class="nav-section-label">Main</div>
             <a href="./admin-dashboard.html" class="sidebar-link">
-                <span class="s-icon">📊</span> Dashboard
+                <i class="fa-solid fa-chart-line s-icon"></i> Dashboard
             </a>
             <a href="./admin-products.html" class="sidebar-link">
-                <span class="s-icon">📦</span> Products
+                <i class="fa-solid fa-box s-icon"></i> Products
             </a>
             <a href="./admin-orders.html" class="sidebar-link">
-                <span class="s-icon">🧾</span> Orders
+                <i class="fa-solid fa-receipt s-icon"></i> Orders
             </a>
-            <a href="./admin-releve.html"    class="sidebar-link active">
-                <span class="s-icon">📄</span> Statement
+            <a href="./admin-releve.html" class="sidebar-link active">
+                <i class="fa-solid fa-file-lines s-icon"></i> Statement
             </a>
             <a href="./admin-chatbot.html" class="sidebar-link">
-                <span class="s-icon">🤖</span> AI Assistant
+                <i class="fa-solid fa-robot s-icon"></i> AI Assistant
+            </a>
+            <a href="./admin-vision.html" class="sidebar-link">
+                <i class="fa-solid fa-camera s-icon"></i> Vision AI
             </a>
             <div class="nav-section-label">Store</div>
             <a href="./products.html" class="sidebar-link">
-                <span class="s-icon">🛍️</span> Storefront
+                <i class="fa-solid fa-store s-icon"></i> Storefront
             </a>
             <a href="../index.html" class="sidebar-link">
-                <span class="s-icon">🏠</span> Home
+                <i class="fa-solid fa-house s-icon"></i> Home
             </a>
         </nav>
         <div class="sidebar-footer">
@@ -174,7 +178,7 @@
                     <strong id="admin-name">Admin</strong>
                     <small>Administrator</small>
                 </div>
-                <button class="btn-logout" onclick="doLogout()" title="Logout">↩</button>
+                <button class="btn-logout" onclick="doLogout()" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
             </div>
         </div>
     </aside>
@@ -183,7 +187,7 @@
     <main class="admin-main">
 
         <div class="page-header">
-            <h1>📄 Order Statement</h1>
+            <h1>Order Statement</h1>
             <p>Filter and download a PDF statement of your orders</p>
         </div>
 
@@ -217,7 +221,7 @@
                     <input type="number" id="f-user" class="form-control" placeholder="e.g. 2" oninput="applyFilters()">
                 </div>
                 <button class="btn btn-outline" onclick="resetFilters()" style="height:42px;white-space:nowrap">
-                    ↺ Reset
+                    Reset
                 </button>
             </div>
         </div>
